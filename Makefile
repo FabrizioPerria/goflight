@@ -1,6 +1,7 @@
 setup-env:
 	@go get go.mongodb.org/mongo-driver/mongo
 	@go get github.com/gofiber/fiber/v2
+	@go install github.com/cosmtrek/air@latest
 	@open -a docker && while ! docker info > /dev/null 2>&1; do sleep 1 ; done
 	@docker image pull mongo:latest
 
@@ -14,4 +15,7 @@ run: build
 	@./bin/api
 
 test:
-	@go test -v ./...
+	@go test -v ./... --count=1
+
+air: build
+	@air
