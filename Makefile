@@ -11,11 +11,18 @@ docker:
 build:
 	@go build -o bin/api .
 
-run: build
+run: build clean
 	@./bin/api
 
 test:
 	@go test -v ./... --count=1
 
-air: build
+clean:
+	@PID=$(shell lsof -i :5001 -t) && \
+    echo $$PID && \
+    if [ -n "$$PID" ]; then \
+		sudo kill -9 $$PID; \
+    fi
+
+air: 
 	@air
