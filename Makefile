@@ -6,7 +6,7 @@ setup-env:
 	@docker image pull mongo:latest
 
 docker:
-	@docker run --name mongodb -d mongo:latest -p 27017:27017 
+	@docker run --name mongodb -d  -p 27017:27017 mongo:latest
 
 build:
 	@go build -o bin/api .
