@@ -5,24 +5,23 @@ setup-env:
 	@open -a docker && while ! docker info > /dev/null 2>&1; do sleep 1 ; done
 	@docker image pull mongo:latest
 
-docker:
+mongo: clean-container
 	@docker run --name mongodb -d  -p 27017:27017 mongo:latest
 
 build:
 	@go build -o bin/api .
 
-run: build clean
+run: build clean mongo
 	@./bin/api
 
 test:
 	@go test -v ./... --count=1
 
-clean:
-	@PID=$(shell lsof -i :5001 -t) && \
-    echo $$PID && \
-    if [ -n "$$PID" ]; then \
-		sudo kill -9 $$PID; \
-    fi
+clean-server:
+	@lsof -i :5001 -t | grep '[0-9]*' | xargs kill -9 || true
 
-air: 
+clean-container:
+	@docker inspect --format '{{json .State.Running}}' mongodb 2>/dev/null | grep true && docker stop mongodb && docker rm mongodb || true
+
+air: mongo
 	@air
