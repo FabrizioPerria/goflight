@@ -23,5 +23,7 @@ clean-server:
 clean-container:
 	@docker inspect --format '{{json .State.Running}}' mongodb 2>/dev/null | grep true && docker stop mongodb && docker rm mongodb || true
 
+clean: clean-server clean-container
+
 air: mongo
 	@air

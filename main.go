@@ -1,26 +1,49 @@
 package main
 
 import (
+	"context"
 	"flag"
+	"log"
 
-	api "github.com/fabrizioperria/goflight/api"
+	"github.com/fabrizioperria/goflight/db"
+	"github.com/fabrizioperria/goflight/handlers"
 	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
+const (
+	uri            = "mongodb://localhost:27017"
+	dbName         = "goflight"
+	userCollection = "users"
 )
 
 func main() {
 	listenAddress := flag.String("listen", ":5001", "The address to listen on for HTTP requests.")
 	flag.Parse()
 
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer func() {
+		if err := client.Disconnect(context.TODO()); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	userStore := db.NewMongoDbUserStore(client)
+
+	userHandler := handlers.UserHandler{
+		UserStore: userStore,
+	}
+
 	app := fiber.New()
-	app.Get("/greet", handleDefault)
 
 	apiv1 := app.Group("/api/v1/")
-	apiv1.Get("/user", api.HandleGetUsersv1)
-	apiv1.Get("/user/:id", api.HandleGetUserv1)
+	apiv1.Get("/user/:id", userHandler.HandleGetUserv1)
+	apiv1.Get("/user", userHandler.HandleGetUsersv1)
 
 	app.Listen(*listenAddress)
-}
-
-func handleDefault(ctx *fiber.Ctx) error {
-	return ctx.SendString("yo dude!")
 }
