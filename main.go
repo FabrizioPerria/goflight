@@ -18,6 +18,12 @@ const (
 	userCollection = "users"
 )
 
+var config = fiber.Config{
+	ErrorHandler: func(ctx *fiber.Ctx, err error) error {
+		return ctx.JSON(map[string]string{"error": err.Error()})
+	},
+}
+
 func main() {
 	listenAddress := flag.String("listen", ":5001", "The address to listen on for HTTP requests.")
 	flag.Parse()
@@ -39,7 +45,8 @@ func main() {
 		UserStore: userStore,
 	}
 
-	app := fiber.New()
+	userStore.CreateRandomUser()
+	app := fiber.New(config)
 
 	apiv1 := app.Group("/api/v1/")
 	apiv1.Get("/user/:id", userHandler.HandleGetUserv1)
