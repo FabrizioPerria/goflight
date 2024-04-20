@@ -42,10 +42,16 @@ func (h *UserHandler) HandlePostCreateUserv1(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	errors := createUserParams.Validate()
+	if len(errors) > 0 {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"errors": errors})
+	}
+
 	user, err := types.NewUserFromParams(createUserParams)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
+
 	_, err = h.UserStore.CreateUser(ctx.Context(), user)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
