@@ -1,6 +1,6 @@
 POST {{URL}}/user
-Content-Type: application/json
 
+Content-Type: application/json
 {
     "first_name": "John",
     "last_name": "Doe",
@@ -8,11 +8,9 @@ Content-Type: application/json
     "phone": "1234567890",
     "password": "password"
 }
-
 ###
 
 GET {{URL}}/user
-
 ###
 
 DELETE {{URL}}/user
