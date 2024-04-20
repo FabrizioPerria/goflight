@@ -10,9 +10,11 @@ import (
 )
 
 type UserStorer interface {
-	CreateRandomUser() error
+	CreateRandomUser(ctx context.Context) (*types.User, error)
+	CreateUser(ctx context.Context, user *types.User) (*types.User, error)
 	GetUserById(ctx context.Context, id string) (*types.User, error)
 	GetUsers(ctx context.Context) ([]*types.User, error)
+	DeleteUsers(ctx context.Context) error
 }
 
 const (
@@ -36,12 +38,10 @@ func (db *MongoDbUserStore) GetUserById(ctx context.Context, id string) (*types.
 	if err != nil {
 		return nil, err
 	}
-	var user *types.User
-	if err := db.collection.FindOne(ctx, bson.M{"_id": oid}).Decode(&user); err != nil {
-		return nil, err
-	}
+	user := &types.User{}
+	err = db.collection.FindOne(ctx, bson.M{"_id": oid}).Decode(&user)
 
-	return user, nil
+	return user, err
 }
 
 func (db *MongoDbUserStore) GetUsers(ctx context.Context) ([]*types.User, error) {
@@ -51,18 +51,29 @@ func (db *MongoDbUserStore) GetUsers(ctx context.Context) ([]*types.User, error)
 		return nil, err
 	}
 
-	var results []*types.User
-	if err := cursor.All(ctx, &results); err != nil {
-		return nil, err
-	}
+	results := make([]*types.User, 0)
+	err = cursor.All(ctx, &results)
 
-	return results, nil
+	return results, err
 }
 
-func (db *MongoDbUserStore) CreateRandomUser() error {
-	_, err := db.collection.InsertOne(context.Background(), types.User{
+func (db *MongoDbUserStore) CreateUser(ctx context.Context, user *types.User) (*types.User, error) {
+	result, err := db.collection.InsertOne(ctx, user)
+	user.Id = result.InsertedID.(primitive.ObjectID).Hex()
+	return user, err
+}
+
+func (db *MongoDbUserStore) DeleteUsers(ctx context.Context) error {
+	_, err := db.collection.DeleteMany(ctx, bson.M{})
+	return err
+}
+
+func (db *MongoDbUserStore) CreateRandomUser(ctx context.Context) (*types.User, error) {
+	user := types.User{
 		FirstName: "John",
 		LastName:  "Doe",
-	})
-	return err
+	}
+	result, err := db.collection.InsertOne(ctx, user)
+	user.Id = result.InsertedID.(primitive.ObjectID).Hex()
+	return &user, err
 }
