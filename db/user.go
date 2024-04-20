@@ -9,9 +9,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type UserStore interface {
+type UserStorer interface {
 	CreateRandomUser() error
 	GetUserById(ctx context.Context, id string) (*types.User, error)
+	GetUsers(ctx context.Context) ([]*types.User, error)
 }
 
 const (
@@ -41,6 +42,21 @@ func (db *MongoDbUserStore) GetUserById(ctx context.Context, id string) (*types.
 	}
 
 	return user, nil
+}
+
+func (db *MongoDbUserStore) GetUsers(ctx context.Context) ([]*types.User, error) {
+	var cursor *mongo.Cursor
+	cursor, err := db.collection.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+
+	var results []*types.User
+	if err := cursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+
+	return results, nil
 }
 
 func (db *MongoDbUserStore) CreateRandomUser() error {
