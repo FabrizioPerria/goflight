@@ -27,14 +27,6 @@ func (h *UserHandler) HandleGetUsersv1(ctx *fiber.Ctx) error {
 	return ctx.JSON(users)
 }
 
-func (h *UserHandler) HandleCreateRandomUserv1(ctx *fiber.Ctx) error {
-	user, err := h.UserStore.CreateRandomUser(ctx.Context())
-	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-	}
-	return ctx.Status(fiber.StatusCreated).JSON(user)
-}
-
 func (h *UserHandler) HandlePostCreateUserv1(ctx *fiber.Ctx) error {
 	createUserParams := types.CreateUserParams{}
 	err := ctx.BodyParser(&createUserParams)
@@ -59,10 +51,23 @@ func (h *UserHandler) HandlePostCreateUserv1(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusCreated).JSON(user)
 }
 
+func (h *UserHandler) HandleDeleteUserv1(ctx *fiber.Ctx) error {
+	userID := ctx.Params("id")
+	id, err := h.UserStore.DeleteUserById(ctx.Context(), userID)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return ctx.Status(fiber.StatusOK).SendString("User deleted: " + id)
+}
+
 func (h *UserHandler) HandleDeleteAllUsersv1(ctx *fiber.Ctx) error {
 	err := h.UserStore.DeleteUsers(ctx.Context())
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 	return ctx.Status(fiber.StatusOK).SendString("Users deleted")
+}
+
+func (h *UserHandler) HandlePutUserv1(ctx *fiber.Ctx) error {
+	return nil
 }

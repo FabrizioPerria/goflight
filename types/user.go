@@ -36,19 +36,19 @@ func isValidEmail(email string) bool {
 	return validEmail.MatchString(email)
 }
 
-func (params CreateUserParams) Validate() []string {
-	var errors []string
+func (params CreateUserParams) Validate() map[string]string {
+	errors := make(map[string]string)
 	if len(params.FirstName) < minFirstNameLength {
-		errors = append(errors, fmt.Sprintf("first name must be at least %d characters", minFirstNameLength))
+		errors["first_name"] = fmt.Sprintf("first name must be at least %d characters", minFirstNameLength)
 	}
 	if len(params.LastName) < minLastNameLength {
-		errors = append(errors, fmt.Sprintf("last name must be at least %d characters", minLastNameLength))
+		errors["last_name"] = fmt.Sprintf("last name must be at least %d characters", minLastNameLength)
 	}
 	if len(params.PlainPassword) < minPasswordLength {
-		errors = append(errors, fmt.Sprintf("password must be at least %d characters", minPasswordLength))
+		errors["password"] = fmt.Sprintf("password must be at least %d characters", minPasswordLength)
 	}
 	if !isValidEmail(params.Email) {
-		errors = append(errors, "invalid email")
+		errors["email"] = "email is not valid"
 	}
 
 	return errors

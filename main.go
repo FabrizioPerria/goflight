@@ -51,8 +51,10 @@ func main() {
 	apiv1.Post("/user", userHandler.HandlePostCreateUserv1)
 	apiv1.Delete("/user", userHandler.HandleDeleteAllUsersv1)
 	apiv1.Get("/user", userHandler.HandleGetUsersv1)
-	apiv1.Get("/user/create-random", userHandler.HandleCreateRandomUserv1)
+
+	apiv1.Delete("/user/:id", userHandler.HandleDeleteUserv1)
 	apiv1.Get("/user/:id", userHandler.HandleGetUserv1)
+	apiv1.Put("/user/:id", userHandler.HandlePutUserv1)
 
 	app.Listen(*listenAddress)
 }

@@ -2,8 +2,8 @@ POST {{URL}}/user
 Content-Type: application/json
 {
     "first_name": "John",
-    "last_name": "Do",
-    "email": "j.d@dudecom",
+    "last_name": "Doe",
+    "email": "j.d@dude.com",
     "phone": "1234567890",
     "password": "password"
 }
@@ -19,3 +19,7 @@ GET {{URL}}/user/6623898134bfe8c1436a3425
 ###
 
 DELETE {{URL}}/user
+
+###
+
+DELETE {{URL}}/user/6623b8a8c8730454440a42df
