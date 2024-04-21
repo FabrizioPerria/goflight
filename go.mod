@@ -1,8 +1,11 @@
 module github.com/fabrizioperria/goflight
 
-go 1.21.5
+go 1.22
+
+toolchain go1.22.2
 
 require (
+	github.com/brianvoe/gofakeit/v7 v7.0.2
 	github.com/gofiber/fiber/v2 v2.52.4
 	github.com/stretchr/testify v1.9.0
 	go.mongodb.org/mongo-driver v1.15.0

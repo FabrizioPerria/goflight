@@ -8,6 +8,9 @@ setup-env:
 mongo: clean-container
 	@docker run --name mongodb -d  -p 27017:27017 mongo:latest
 
+new-db:
+	@go run scripts/db-starter.go
+
 build:
 	@go build -o bin/api .
 

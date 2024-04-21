@@ -7,6 +7,7 @@ import (
 
 	"github.com/fabrizioperria/goflight/db"
 	"github.com/fabrizioperria/goflight/handlers"
+	"github.com/fabrizioperria/goflight/scripts"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -25,8 +26,14 @@ var config = fiber.Config{
 }
 
 func main() {
+	makeNewDb := flag.Bool("new-db", false, "Seed the database with fake data.")
 	listenAddress := flag.String("listen", ":5001", "The address to listen on for HTTP requests.")
 	flag.Parse()
+
+	if *makeNewDb {
+		scripts.SeedUsers()
+		return
+	}
 
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
 	if err != nil {
