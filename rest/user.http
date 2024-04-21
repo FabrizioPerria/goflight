@@ -23,3 +23,11 @@ DELETE {{URL}}/user
 ###
 
 DELETE {{URL}}/user/6623b8a8c8730454440a42df
+
+###
+
+PUT {{URL}}/user/6623c43a7773e2e9682b368d
+Content-Type: application/json
+{
+    "email": "dudely@dude.dud"
+}

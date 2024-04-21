@@ -4,6 +4,8 @@ import (
 	"github.com/fabrizioperria/goflight/db"
 	"github.com/fabrizioperria/goflight/types"
 	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type UserHandler struct {
@@ -55,13 +57,13 @@ func (h *UserHandler) HandleDeleteUserv1(ctx *fiber.Ctx) error {
 	userID := ctx.Params("id")
 	id, err := h.UserStore.DeleteUserById(ctx.Context(), userID)
 	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
 	return ctx.Status(fiber.StatusOK).SendString("User deleted: " + id)
 }
 
 func (h *UserHandler) HandleDeleteAllUsersv1(ctx *fiber.Ctx) error {
-	err := h.UserStore.DeleteUsers(ctx.Context())
+	err := h.UserStore.Drop(ctx.Context())
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -69,5 +71,21 @@ func (h *UserHandler) HandleDeleteAllUsersv1(ctx *fiber.Ctx) error {
 }
 
 func (h *UserHandler) HandlePutUserv1(ctx *fiber.Ctx) error {
-	return nil
+	userID := ctx.Params("id")
+	oid, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	filter := bson.M{"_id": oid}
+
+	values := types.UpdateUserParams{}
+	err = ctx.BodyParser(&values)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	_, err = h.UserStore.UpdateUser(ctx.Context(), filter, values)
+	if err != nil {
+		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
+	}
+	return ctx.Status(fiber.StatusOK).SendString("User updated: " + userID)
 }

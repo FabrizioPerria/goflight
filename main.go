@@ -39,7 +39,7 @@ func main() {
 		}
 	}()
 
-	userStore := db.NewMongoDbUserStore(client)
+	userStore := db.NewMongoDbUserStore(client, dbName)
 
 	userHandler := handlers.UserHandler{
 		UserStore: userStore,

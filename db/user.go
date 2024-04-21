@@ -10,13 +10,17 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+type Dropper interface {
+	Drop(ctx context.Context) error
+}
+
 type UserStorer interface {
 	CreateUser(ctx context.Context, user *types.User) (*types.User, error)
 	GetUserById(ctx context.Context, id string) (*types.User, error)
 	GetUsers(ctx context.Context) ([]*types.User, error)
 	DeleteUserById(ctx context.Context, id string) (string, error)
-	DeleteUsers(ctx context.Context) error
-	// UpdateUser(ctx context.Context) error
+	UpdateUser(ctx context.Context, filter bson.M, values types.UpdateUserParams) (string, error)
+	Dropper
 }
 
 const (
@@ -28,7 +32,7 @@ type MongoDbUserStore struct {
 	collection *mongo.Collection
 }
 
-func NewMongoDbUserStore(client *mongo.Client) *MongoDbUserStore {
+func NewMongoDbUserStore(client *mongo.Client, dbName string) *MongoDbUserStore {
 	return &MongoDbUserStore{
 		client:     client,
 		collection: client.Database(dbName).Collection(userCollection),
@@ -38,7 +42,7 @@ func NewMongoDbUserStore(client *mongo.Client) *MongoDbUserStore {
 func (db *MongoDbUserStore) GetUserById(ctx context.Context, id string) (*types.User, error) {
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid id format")
 	}
 	user := &types.User{}
 	err = db.collection.FindOne(ctx, bson.M{"_id": oid}).Decode(&user)
@@ -78,7 +82,15 @@ func (db *MongoDbUserStore) DeleteUserById(ctx context.Context, id string) (stri
 	return id, nil
 }
 
-func (db *MongoDbUserStore) DeleteUsers(ctx context.Context) error {
-	_, err := db.collection.DeleteMany(ctx, bson.M{})
+func (db *MongoDbUserStore) Drop(ctx context.Context) error {
+	err := db.collection.Drop(ctx)
 	return err
+}
+
+func (db *MongoDbUserStore) UpdateUser(ctx context.Context, filter bson.M, values types.UpdateUserParams) (string, error) {
+	result, err := db.collection.UpdateOne(ctx, filter, bson.M{"$set": values})
+	if err != nil || result.ModifiedCount == 0 {
+		return "", fmt.Errorf("user not found")
+	}
+	return "", nil
 }

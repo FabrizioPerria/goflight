@@ -7,6 +7,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type UpdateUserParams struct {
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+}
+
 type CreateUserParams struct {
 	FirstName     string `json:"first_name"`
 	LastName      string `json:"last_name"`
@@ -51,6 +56,18 @@ func (params CreateUserParams) Validate() map[string]string {
 		errors["email"] = "email is not valid"
 	}
 
+	return errors
+}
+
+func (params UpdateUserParams) Validate() map[string]string {
+	errors := make(map[string]string)
+
+	if len(params.FirstName) < minFirstNameLength {
+		errors["first_name"] = fmt.Sprintf("first name must be at least %d characters", minFirstNameLength)
+	}
+	if len(params.LastName) < minLastNameLength {
+		errors["last_name"] = fmt.Sprintf("last name must be at least %d characters", minLastNameLength)
+	}
 	return errors
 }
 
