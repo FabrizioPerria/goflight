@@ -30,11 +30,6 @@ type Seat struct {
 	Available bool            `json:"available" bson:"available"`
 }
 
-type Airport struct {
-	City string `json:"name" bson:"name"`
-	Code string `json:"code" bson:"code"`
-}
-
 type Flight struct {
 	Departure     Airport    `json:"departure" bson:"departure"`
 	Arrival       Airport    `json:"arrival" bson:"arrival"`
