@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/fabrizioperria/goflight/types"
 	"go.mongodb.org/mongo-driver/bson"
@@ -38,4 +39,17 @@ func (db *MongoDbFlightStore) CreateFlight(ctx context.Context, flight *types.Fl
 	result, err := db.collection.InsertOne(ctx, flight)
 	flight.Id = result.InsertedID.(primitive.ObjectID).Hex()
 	return flight, err
+}
+
+func (db *MongoDbFlightStore) Drop(ctx context.Context) error {
+	return db.collection.Drop(ctx)
+}
+
+func (db *MongoDbFlightStore) UpdateFlight(ctx context.Context, filter bson.M, values types.UpdateFlightParams) (string, error) {
+	update := bson.M{"$set": values}
+	result, err := db.collection.UpdateOne(ctx, filter, update)
+	if err != nil || result.ModifiedCount == 0 {
+		return "", fmt.Errorf("flight not found")
+	}
+	return "", nil
 }

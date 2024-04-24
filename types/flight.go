@@ -1,9 +1,5 @@
 package types
 
-import (
-	"golang.org/x/text/currency"
-)
-
 type SeatClass int
 
 const (
@@ -22,12 +18,12 @@ type FlightTime struct {
 }
 
 type Seat struct {
-	Price     currency.Amount `json:"price" bson:"price"`
-	Id        string          `json:"id,omitempty" bson:"_id,omitempty"`
-	Number    string          `json:"number" bson:"number"`
-	FlightId  string          `json:"flight_id" bson:"flight_id"`
-	Class     SeatClass       `json:"class" bson:"class"`
-	Available bool            `json:"available" bson:"available"`
+	Id        string    `json:"id,omitempty" bson:"_id,omitempty"`
+	FlightId  string    `json:"flight_id" bson:"flight_id"`
+	Number    int       `json:"number" bson:"number"`
+	Price     float64   `json:"price" bson:"price"`
+	Class     SeatClass `json:"class" bson:"class"`
+	Available bool      `json:"available" bson:"available"`
 }
 
 type Flight struct {
@@ -48,12 +44,18 @@ type CreateFlightParams struct {
 	ArrivalTime   FlightTime `json:"arrival_time" bson:"arrival_time"`
 }
 
-func NewFlightFromParams(params CreateFlightParams) Flight {
-	return Flight{
+type UpdateFlightParams struct {
+	DepartureTime FlightTime `json:"departure_time,omitempty" bson:"departure_time,omitempty"`
+	ArrivalTime   FlightTime `json:"arrival_time,omitempty" bson:"arrival_time,omitempty"`
+	Seats         []Seat     `json:"seats,omitempty" bson:"seats,omitempty"`
+}
+
+func NewFlightFromParams(params CreateFlightParams) (*Flight, error) {
+	return &Flight{
 		Arrival:       params.Arrival,
 		Departure:     params.Departure,
 		Airline:       params.Airline,
 		DepartureTime: params.DepartureTime,
 		ArrivalTime:   params.ArrivalTime,
-	}
+	}, nil
 }
