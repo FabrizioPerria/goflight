@@ -10,14 +10,13 @@ import (
 	"github.com/fabrizioperria/goflight/db"
 	"github.com/fabrizioperria/goflight/types"
 	"github.com/govalues/money"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func SeedUsers(client *mongo.Client, dbName string) {
-	userDb := db.NewMongoDbUserStore(client, dbName)
+func SeedUsers(client *mongo.Client) {
+	userDb := db.NewMongoDbUserStore(client)
 	userDb.Drop(context.Background())
 
 	fmt.Println("Seeding users")
@@ -40,8 +39,8 @@ func SeedUsers(client *mongo.Client, dbName string) {
 
 var airports = []types.Airport{}
 
-func SeedAirports(client *mongo.Client, dbName string) {
-	airportDb := db.NewMongoDbAirportStore(client, dbName)
+func SeedAirports(client *mongo.Client) {
+	airportDb := db.NewMongoDbAirportStore(client)
 	airportDb.Drop(context.Background())
 
 	fmt.Println("Seeding airports")
@@ -55,9 +54,11 @@ func SeedAirports(client *mongo.Client, dbName string) {
 	}
 }
 
-func SeedFlights(client *mongo.Client, dbName string) {
-	flightDb := db.NewMongoDbFlightStore(client, dbName)
+func SeedFlights(client *mongo.Client) {
+	flightDb := db.NewMongoDbFlightStore(client)
 	flightDb.Drop(context.Background())
+	seatDb := db.NewMongoDbSeatStore(client, *flightDb)
+	seatDb.Drop(context.Background())
 
 	fmt.Println("Seeding flights")
 	for i := 0; i < 10; i++ {
@@ -93,9 +94,8 @@ func SeedFlights(client *mongo.Client, dbName string) {
 			fmt.Println(err)
 			continue
 		}
-		fid, err := primitive.ObjectIDFromHex(newflight.Id)
-		seats := []types.Seat{}
-		for j := 0; j < 100; j++ {
+		fid, _ := primitive.ObjectIDFromHex(newflight.Id)
+		for j := 0; j < 10; j++ {
 			price, _ := money.NewAmountFromFloat64("USD", gofakeit.Float64Range(10, 1000))
 			price = price.Round(2)
 			priceFloat, _ := price.Float64()
@@ -105,26 +105,25 @@ func SeedFlights(client *mongo.Client, dbName string) {
 				Number:    j,
 				Class:     types.SeatClass(gofakeit.Number(1, 3)),
 				Available: true,
-				FlightId:  fid.String(),
+				FlightId:  fid.Hex(),
 			}
-			seats = append(seats, seat)
+			seatDb.CreateSeat(context.Background(), &seat)
 		}
-		updateFlightParams := types.UpdateFlightParams{
-			Seats: seats,
-		}
-
-		filter := bson.M{"_id": fid}
-		_, err = flightDb.UpdateFlight(context.Background(), filter, updateFlightParams)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
+		// updateFlightParams := types.UpdateFlightParams{
+		// 	Seats: seats,
+		// }
+		//
+		// filter := bson.M{"_id": fid}
+		// _, err = flightDb.UpdateFlight(context.Background(), filter, updateFlightParams)
+		// if err != nil {
+		// 	fmt.Println(err)
+		// 	continue
+		// }
 	}
 }
 
 const (
-	uri    = "mongodb://localhost:27017"
-	dbName = "goflight"
+	uri = "mongodb://localhost:27017"
 )
 
 func main() {
@@ -133,7 +132,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	SeedUsers(client, dbName)
-	SeedAirports(client, dbName)
-	SeedFlights(client, dbName)
+	SeedUsers(client)
+	SeedAirports(client)
+	SeedFlights(client)
 }

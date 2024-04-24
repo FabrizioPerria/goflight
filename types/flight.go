@@ -45,9 +45,14 @@ type CreateFlightParams struct {
 }
 
 type UpdateFlightParams struct {
+	Seats         []Seat     `json:"seats,omitempty" bson:"seats,omitempty"`
 	DepartureTime FlightTime `json:"departure_time,omitempty" bson:"departure_time,omitempty"`
 	ArrivalTime   FlightTime `json:"arrival_time,omitempty" bson:"arrival_time,omitempty"`
-	Seats         []Seat     `json:"seats,omitempty" bson:"seats,omitempty"`
+}
+
+type UpdateSeatParams struct {
+	FlightId string `json:"flight_id" bson:"flight_id"`
+	Status   bool   `json:"status" bson:"status"`
 }
 
 func NewFlightFromParams(params CreateFlightParams) (*Flight, error) {
@@ -57,5 +62,6 @@ func NewFlightFromParams(params CreateFlightParams) (*Flight, error) {
 		Airline:       params.Airline,
 		DepartureTime: params.DepartureTime,
 		ArrivalTime:   params.ArrivalTime,
+		Seats:         []Seat{},
 	}, nil
 }

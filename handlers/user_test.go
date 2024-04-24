@@ -32,7 +32,7 @@ func setup() (*testdb, error) {
 	if err != nil {
 		return nil, err
 	}
-	db := db.NewMongoDbUserStore(client, dbName)
+	db := db.NewMongoDbUserStore(client)
 	return &testdb{UserStore: db, Client: client}, nil
 }
 

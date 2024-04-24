@@ -15,7 +15,7 @@ type FlightStorer interface {
 	GetFlightById(ctx context.Context, id string) (*types.User, error)
 	GetFlights(ctx context.Context) ([]*types.User, error)
 	DeleteFlightById(ctx context.Context, id string) (string, error)
-	UpdateFlight(ctx context.Context, filter bson.M, values types.UpdateUserParams) (string, error)
+	UpdateFlight(ctx context.Context, filter bson.M, values types.UpdateFlightParams) (string, error)
 	Dropper
 }
 
@@ -28,10 +28,10 @@ type MongoDbFlightStore struct {
 	collection *mongo.Collection
 }
 
-func NewMongoDbFlightStore(client *mongo.Client, dbName string) *MongoDbFlightStore {
+func NewMongoDbFlightStore(client *mongo.Client) *MongoDbFlightStore {
 	return &MongoDbFlightStore{
 		client:     client,
-		collection: client.Database(dbName).Collection(flightCollection),
+		collection: client.Database(DBNAME).Collection(flightCollection),
 	}
 }
 

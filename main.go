@@ -13,9 +13,7 @@ import (
 )
 
 const (
-	uri            = "mongodb://localhost:27017"
-	dbName         = "goflight"
-	userCollection = "users"
+	uri = "mongodb://localhost:27017"
 )
 
 var config = fiber.Config{
@@ -39,7 +37,7 @@ func main() {
 		}
 	}()
 
-	userStore := db.NewMongoDbUserStore(client, dbName)
+	userStore := db.NewMongoDbUserStore(client)
 
 	userHandler := handlers.UserHandler{
 		UserStore: userStore,
@@ -48,15 +46,15 @@ func main() {
 	app := fiber.New(config)
 
 	apiv1 := app.Group("/api/v1/")
-	apiv1.Post("/user", userHandler.HandlePostCreateUserv1)
-	apiv1.Delete("/user", userHandler.HandleDeleteAllUsersv1)
-	apiv1.Get("/user", userHandler.HandleGetUsersv1)
+	apiv1.Post("/users", userHandler.HandlePostCreateUserv1)
+	apiv1.Delete("/users", userHandler.HandleDeleteAllUsersv1)
+	apiv1.Get("/users", userHandler.HandleGetUsersv1)
 
-	apiv1.Delete("/user/:id", userHandler.HandleDeleteUserv1)
-	apiv1.Get("/user/:id", userHandler.HandleGetUserv1)
-	apiv1.Put("/user/:id", userHandler.HandlePutUserv1)
+	apiv1.Delete("/users/:id", userHandler.HandleDeleteUserv1)
+	apiv1.Get("/users/:id", userHandler.HandleGetUserv1)
+	apiv1.Put("/users/:id", userHandler.HandlePutUserv1)
 
-	apiv1.Post("/flight", userHandler.HandlePostCreateUserv1)
+	apiv1.Post("/flights", userHandler.HandlePostCreateUserv1)
 
 	app.Listen(*listenAddress)
 }

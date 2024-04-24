@@ -18,10 +18,10 @@ type MongoDbAirportStore struct {
 
 const airportCollection = "airports"
 
-func NewMongoDbAirportStore(client *mongo.Client, dbName string) *MongoDbAirportStore {
+func NewMongoDbAirportStore(client *mongo.Client) *MongoDbAirportStore {
 	return &MongoDbAirportStore{
 		client:     client,
-		collection: client.Database(dbName).Collection(airportCollection),
+		collection: client.Database(DBNAME).Collection(airportCollection),
 	}
 }
 
