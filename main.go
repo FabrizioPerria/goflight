@@ -53,15 +53,16 @@ func main() {
 	apiv1.Post("/users", userHandler.HandlePostCreateUserv1)
 	apiv1.Delete("/users", userHandler.HandleDeleteAllUsersv1)
 	apiv1.Get("/users", userHandler.HandleGetUsersv1)
-	apiv1.Delete("/users/:id", userHandler.HandleDeleteUserv1)
-	apiv1.Get("/users/:id", userHandler.HandleGetUserv1)
-	apiv1.Put("/users/:id", userHandler.HandlePutUserv1)
+	apiv1.Delete("/users/:uid", userHandler.HandleDeleteUserv1)
+	apiv1.Get("/users/:uid", userHandler.HandleGetUserv1)
+	apiv1.Put("/users/:uid", userHandler.HandlePutUserv1)
 
 	apiv1.Get("/flights", flightHandler.HandleGetFlightsv1)
 	apiv1.Post("/flights", flightHandler.HandlePostCreateFlightv1)
 	apiv1.Delete("/flights", flightHandler.HandleDeleteAllFlightsv1)
-	apiv1.Get("/flights/:id", flightHandler.HandleGetFlightByIdv1)
-	apiv1.Get("/flights/:id/seats", flightHandler.HandleGetSeatsv1)
+	apiv1.Get("/flights/:fid", flightHandler.HandleGetFlightByIdv1)
+	apiv1.Get("/flights/:fid/seats", flightHandler.HandleGetSeatsv1)
+	apiv1.Get("/flights/:fid/seats/:sid", flightHandler.HandleGetSeatsv1)
 
 	app.Listen(*listenAddress)
 }

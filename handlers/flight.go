@@ -19,7 +19,7 @@ func NewFlightHandler(store db.Store) *FlightHandler {
 }
 
 func (h *FlightHandler) HandleGetFlightByIdv1(ctx *fiber.Ctx) error {
-	id := ctx.Params("id")
+	id := ctx.Params("fid")
 	flight, err := h.store.Flight.GetFlightById(ctx.Context(), id)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
@@ -28,7 +28,7 @@ func (h *FlightHandler) HandleGetFlightByIdv1(ctx *fiber.Ctx) error {
 }
 
 func (h *FlightHandler) HandleGetSeatsv1(ctx *fiber.Ctx) error {
-	flightID := ctx.Params("id")
+	flightID := ctx.Params("fid")
 	oid, err := primitive.ObjectIDFromHex(flightID)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -89,19 +89,24 @@ func (h *FlightHandler) HandlePostCreateFlightv1(ctx *fiber.Ctx) error {
 }
 
 func (h *FlightHandler) HandlePutFlightv1(ctx *fiber.Ctx) error {
-	flightID := ctx.Params("id")
+	flightID := ctx.Params("fid")
+	oid, err := primitive.ObjectIDFromHex(flightID)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	filter := bson.M{"_id": oid}
 	updateFlightParams := types.UpdateFlightParams{}
-	err := ctx.BodyParser(&updateFlightParams)
+
+	err = ctx.BodyParser(&updateFlightParams)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	filter := map[string]interface{}{"_id": flightID}
 	_, err = h.store.Flight.UpdateFlight(ctx.Context(), filter, updateFlightParams)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
-	return ctx.JSON(fiber.Map{"id": flightID})
+	return ctx.Status(fiber.StatusOK).SendString("Flight updated: " + flightID)
 }
 
 func (h *FlightHandler) HandleDeleteAllFlightsv1(ctx *fiber.Ctx) error {

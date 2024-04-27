@@ -65,7 +65,7 @@ func (db *MongoDbUserStore) GetUsers(ctx context.Context) ([]*types.User, error)
 
 func (db *MongoDbUserStore) CreateUser(ctx context.Context, user *types.User) (*types.User, error) {
 	result, err := db.collection.InsertOne(ctx, user)
-	user.Id = result.InsertedID.(primitive.ObjectID).Hex()
+	user.Id = result.InsertedID.(primitive.ObjectID)
 	return user, err
 }
 

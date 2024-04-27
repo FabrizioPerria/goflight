@@ -19,7 +19,7 @@ func NewUserHandler(store db.Store) *UserHandler {
 }
 
 func (h *UserHandler) HandleGetUserv1(ctx *fiber.Ctx) error {
-	id := ctx.Params("id")
+	id := ctx.Params("uid")
 	user, err := h.store.User.GetUserById(ctx.Context(), id)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
@@ -60,7 +60,7 @@ func (h *UserHandler) HandlePostCreateUserv1(ctx *fiber.Ctx) error {
 }
 
 func (h *UserHandler) HandleDeleteUserv1(ctx *fiber.Ctx) error {
-	userID := ctx.Params("id")
+	userID := ctx.Params("uid")
 	id, err := h.store.User.DeleteUserById(ctx.Context(), userID)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
@@ -77,7 +77,7 @@ func (h *UserHandler) HandleDeleteAllUsersv1(ctx *fiber.Ctx) error {
 }
 
 func (h *UserHandler) HandlePutUserv1(ctx *fiber.Ctx) error {
-	userID := ctx.Params("id")
+	userID := ctx.Params("uid")
 	oid, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})

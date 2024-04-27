@@ -25,10 +25,3 @@ GET {{URL}}/flights
 DELETE {{URL}}/flights
 
 ###
-
-
-# PUT {{URL}}/flights/
-# Content-Type: application/json
-# {
-#     "email": "dudely@dude.dud"
-# }

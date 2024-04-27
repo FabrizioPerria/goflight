@@ -13,6 +13,7 @@ type SeatStorer interface {
 	CreateSeat(ctx context.Context, user *types.Seat) (*types.Seat, error)
 	UpdateSeat(ctx context.Context, filter bson.M, values types.UpdateSeatParams) (string, error)
 	GetSeats(ctx context.Context, filter bson.M) ([]*types.Seat, error)
+	GetSeatById(ctx context.Context, filter bson.M) (*types.Seat, error)
 	Dropper
 }
 
@@ -76,4 +77,13 @@ func (db *MongoDbSeatStore) GetSeats(ctx context.Context, filter bson.M) ([]*typ
 	err = cursor.All(ctx, &results)
 
 	return results, err
+}
+
+func (db *MongoDbSeatStore) GetSeatById(ctx context.Context, filter bson.M) (*types.Seat, error) {
+	var seat types.Seat
+	err := db.collection.FindOne(ctx, filter).Decode(&seat)
+	if err != nil {
+		return nil, err
+	}
+	return &seat, nil
 }
