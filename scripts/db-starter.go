@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/fabrizioperria/goflight/db"
@@ -47,23 +48,11 @@ func SeedFlights(client *mongo.Client) {
 	for i := 0; i < 10; i++ {
 
 		flightParams := types.CreateFlightParams{
-			Airline:   gofakeit.Company(),
-			Departure: gofakeit.City(),
-			Arrival:   gofakeit.City(),
-			DepartureTime: types.FlightTime{
-				Day:   gofakeit.Day(),
-				Month: gofakeit.Month(),
-				Year:  gofakeit.Year(),
-				Hour:  gofakeit.Hour(),
-				Min:   gofakeit.Minute(),
-			},
-			ArrivalTime: types.FlightTime{
-				Day:   gofakeit.Day(),
-				Month: gofakeit.Month(),
-				Year:  gofakeit.Year(),
-				Hour:  gofakeit.Hour(),
-				Min:   gofakeit.Minute(),
-			},
+			Airline:       gofakeit.Company(),
+			Departure:     gofakeit.City(),
+			Arrival:       gofakeit.City(),
+			DepartureTime: gofakeit.Date().Format(time.RFC3339),
+			ArrivalTime:   gofakeit.Date().Format(time.RFC3339),
 		}
 		flight, err := types.NewFlightFromParams(flightParams)
 		if err != nil {

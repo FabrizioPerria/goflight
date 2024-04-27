@@ -1,0 +1,34 @@
+POST {{URL}}/flights
+Content-Type: application/json
+{
+    "airline": "Delta",
+    "departure": "JFK",
+    "arrival": "LAX",
+    "departure_time": "2021-12-12T12:00:00Z",
+    "arrival_time": "2021-12-12T14:00:00Z"
+}
+
+###
+
+GET {{URL}}/flights/662cc6cd71c1d1276d282982
+
+###
+
+GET {{URL}}/flights/662cc6cd71c1d1276d282982/seats
+
+###
+
+GET {{URL}}/flights
+
+###
+
+DELETE {{URL}}/flights
+
+###
+
+
+# PUT {{URL}}/flights/
+# Content-Type: application/json
+# {
+#     "email": "dudely@dude.dud"
+# }

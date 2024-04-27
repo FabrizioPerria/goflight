@@ -72,7 +72,17 @@ func (db *MongoDbFlightStore) Drop(ctx context.Context) error {
 }
 
 func (db *MongoDbFlightStore) UpdateFlight(ctx context.Context, filter bson.M, values types.UpdateFlightParams) (string, error) {
-	update := bson.M{"$set": values}
+	thinValues := bson.M{}
+	if values.ArrivalTime != "" {
+		thinValues["arrival_time"] = values.ArrivalTime
+	}
+	if values.DepartureTime != "" {
+		thinValues["departure_time"] = values.DepartureTime
+	}
+	if len(values.Seats) > 0 {
+		thinValues["seats"] = values.Seats
+	}
+	update := bson.M{"$set": thinValues}
 	result, err := db.collection.UpdateOne(ctx, filter, update)
 	if err != nil || result.ModifiedCount == 0 {
 		return "", fmt.Errorf("flight not found")

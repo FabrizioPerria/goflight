@@ -66,19 +66,24 @@ func (h *FlightHandler) HandlePostCreateFlightv1(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	seatIDs := []primitive.ObjectID{}
 	for i := 0; i < 50; i++ {
 		seat := types.Seat{
 			FlightId:  primitive.ObjectID(flight.Id),
 			Number:    i,
 			Price:     100,
 			Class:     types.SeatClass(i%3 + 1),
+			Location:  types.SeatLocation(i%3 + 1),
 			Available: true,
 		}
-		_, err = h.store.Seat.CreateSeat(ctx.Context(), &seat)
+		created, err := h.store.Seat.CreateSeat(ctx.Context(), &seat)
 		if err != nil {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
+		seatIDs = append(seatIDs, created.Id)
 	}
+	h.store.Flight.UpdateFlight(ctx.Context(), bson.M{"_id": flight.Id}, types.UpdateFlightParams{Seats: seatIDs})
+	flight.Seats = seatIDs
 
 	return ctx.Status(fiber.StatusCreated).JSON(flight)
 }
