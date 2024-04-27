@@ -37,11 +37,14 @@ func main() {
 		}
 	}()
 	var (
-		userStore     = db.NewMongoDbUserStore(client)
-		userHandler   = handlers.UserHandler{UserStore: userStore}
-		flightStore   = db.NewMongoDbFlightStore(client)
-		seatStore     = db.NewMongoDbSeatStore(client, *flightStore)
-		flightHandler = handlers.FlightHandler{FlightStore: flightStore, SeatStore: seatStore}
+		userStore   = db.NewMongoDbUserStore(client)
+		flightStore = db.NewMongoDbFlightStore(client)
+		seatStore   = db.NewMongoDbSeatStore(client, *flightStore)
+
+		mainStore = db.Store{User: userStore, Flight: flightStore, Seat: seatStore}
+
+		userHandler   = handlers.NewUserHandler(mainStore)
+		flightHandler = handlers.NewFlightHandler(mainStore)
 
 		app   = fiber.New(config)
 		apiv1 = app.Group("/api/v1/")
@@ -56,6 +59,7 @@ func main() {
 	apiv1.Put("/users/:id", userHandler.HandlePutUserv1)
 
 	apiv1.Get("/flights", flightHandler.HandleGetFlightsv1)
+	apiv1.Get("/flights/:id", flightHandler.HandleGetFlightByIdv1)
 	apiv1.Get("/flights/:id/seats", flightHandler.HandleGetSeatsv1)
 	// apiv1.Post("/flights", flightHandler.HandlePostCreateFlightv1)
 

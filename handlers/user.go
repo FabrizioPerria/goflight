@@ -9,12 +9,18 @@ import (
 )
 
 type UserHandler struct {
-	UserStore db.UserStorer
+	store db.Store
+}
+
+func NewUserHandler(store db.Store) *UserHandler {
+	return &UserHandler{
+		store: store,
+	}
 }
 
 func (h *UserHandler) HandleGetUserv1(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
-	user, err := h.UserStore.GetUserById(ctx.Context(), id)
+	user, err := h.store.User.GetUserById(ctx.Context(), id)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -22,7 +28,7 @@ func (h *UserHandler) HandleGetUserv1(ctx *fiber.Ctx) error {
 }
 
 func (h *UserHandler) HandleGetUsersv1(ctx *fiber.Ctx) error {
-	users, err := h.UserStore.GetUsers(ctx.Context())
+	users, err := h.store.User.GetUsers(ctx.Context())
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -46,7 +52,7 @@ func (h *UserHandler) HandlePostCreateUserv1(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	_, err = h.UserStore.CreateUser(ctx.Context(), user)
+	_, err = h.store.User.CreateUser(ctx.Context(), user)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -55,7 +61,7 @@ func (h *UserHandler) HandlePostCreateUserv1(ctx *fiber.Ctx) error {
 
 func (h *UserHandler) HandleDeleteUserv1(ctx *fiber.Ctx) error {
 	userID := ctx.Params("id")
-	id, err := h.UserStore.DeleteUserById(ctx.Context(), userID)
+	id, err := h.store.User.DeleteUserById(ctx.Context(), userID)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -63,7 +69,7 @@ func (h *UserHandler) HandleDeleteUserv1(ctx *fiber.Ctx) error {
 }
 
 func (h *UserHandler) HandleDeleteAllUsersv1(ctx *fiber.Ctx) error {
-	err := h.UserStore.Drop(ctx.Context())
+	err := h.store.User.Drop(ctx.Context())
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -83,7 +89,7 @@ func (h *UserHandler) HandlePutUserv1(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	_, err = h.UserStore.UpdateUser(ctx.Context(), filter, values)
+	_, err = h.store.User.UpdateUser(ctx.Context(), filter, values)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}

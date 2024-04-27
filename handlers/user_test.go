@@ -89,7 +89,7 @@ func TestPostCreateValidUser(t *testing.T) {
 	db, err := setupUsersDb()
 	assert.NoError(t, err)
 	defer teardownUsersDb(t, db)
-	userHandler := UserHandler{UserStore: db.UserStore}
+	userHandler := UserHandler{store: db.store.User}
 
 	app := fiber.New()
 

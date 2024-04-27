@@ -39,6 +39,7 @@ func (db *MongoDbSeatStore) CreateSeat(ctx context.Context, seat *types.Seat) (*
 	if err != nil {
 		return nil, err
 	}
+	seat.Id = result.InsertedID.(primitive.ObjectID)
 
 	filter := bson.M{"_id": result.InsertedID}
 	update := bson.M{"$addToSet": bson.M{"seats": seat}}
