@@ -36,16 +36,17 @@ func main() {
 			log.Fatal(err)
 		}
 	}()
+	var (
+		userStore     = db.NewMongoDbUserStore(client)
+		userHandler   = handlers.UserHandler{UserStore: userStore}
+		flightStore   = db.NewMongoDbFlightStore(client)
+		seatStore     = db.NewMongoDbSeatStore(client, *flightStore)
+		flightHandler = handlers.FlightHandler{FlightStore: flightStore, SeatStore: seatStore}
 
-	userStore := db.NewMongoDbUserStore(client)
+		app   = fiber.New(config)
+		apiv1 = app.Group("/api/v1/")
+	)
 
-	userHandler := handlers.UserHandler{
-		UserStore: userStore,
-	}
-
-	app := fiber.New(config)
-
-	apiv1 := app.Group("/api/v1/")
 	apiv1.Post("/users", userHandler.HandlePostCreateUserv1)
 	apiv1.Delete("/users", userHandler.HandleDeleteAllUsersv1)
 	apiv1.Get("/users", userHandler.HandleGetUsersv1)
@@ -54,7 +55,9 @@ func main() {
 	apiv1.Get("/users/:id", userHandler.HandleGetUserv1)
 	apiv1.Put("/users/:id", userHandler.HandlePutUserv1)
 
-	apiv1.Post("/flights", userHandler.HandlePostCreateUserv1)
+	apiv1.Get("/flights", flightHandler.HandleGetFlightsv1)
+	apiv1.Get("/flights/:id/seats", flightHandler.HandleGetSeatsv1)
+	// apiv1.Post("/flights", flightHandler.HandlePostCreateFlightv1)
 
 	app.Listen(*listenAddress)
 }

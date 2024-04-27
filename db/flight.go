@@ -11,10 +11,10 @@ import (
 )
 
 type FlightStorer interface {
-	CreateFlight(ctx context.Context, user *types.User) (*types.User, error)
-	GetFlightById(ctx context.Context, id string) (*types.User, error)
-	GetFlights(ctx context.Context) ([]*types.User, error)
-	DeleteFlightById(ctx context.Context, id string) (string, error)
+	CreateFlight(ctx context.Context, flight *types.Flight) (*types.Flight, error)
+	// GetFlightById(ctx context.Context, id string) (*types.Flight, error)
+	GetFlights(ctx context.Context) ([]*types.Flight, error)
+	// DeleteFlightById(ctx context.Context, id string) (string, error)
 	UpdateFlight(ctx context.Context, filter bson.M, values types.UpdateFlightParams) (string, error)
 	Dropper
 }
@@ -35,9 +35,22 @@ func NewMongoDbFlightStore(client *mongo.Client) *MongoDbFlightStore {
 	}
 }
 
+func (db *MongoDbFlightStore) GetFlights(ctx context.Context) ([]*types.Flight, error) {
+	var cursor *mongo.Cursor
+	cursor, err := db.collection.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]*types.Flight, 0)
+	err = cursor.All(ctx, &results)
+
+	return results, err
+}
+
 func (db *MongoDbFlightStore) CreateFlight(ctx context.Context, flight *types.Flight) (*types.Flight, error) {
 	result, err := db.collection.InsertOne(ctx, flight)
-	flight.Id = result.InsertedID.(primitive.ObjectID).Hex()
+	flight.Id = result.InsertedID.(primitive.ObjectID)
 	return flight, err
 }
 

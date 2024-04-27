@@ -1,13 +1,6 @@
 package types
 
-type SeatClass int
-
-const (
-	_ SeatClass = iota
-	Economy
-	Business
-	First
-)
+import "go.mongodb.org/mongo-driver/bson/primitive"
 
 type FlightTime struct {
 	Day   int `json:"day" bson:"day"`
@@ -17,42 +10,28 @@ type FlightTime struct {
 	Min   int `json:"min" bson:"min"`
 }
 
-type Seat struct {
-	Id        string    `json:"id,omitempty" bson:"_id,omitempty"`
-	FlightId  string    `json:"flight_id" bson:"flight_id"`
-	Number    int       `json:"number" bson:"number"`
-	Price     float64   `json:"price" bson:"price"`
-	Class     SeatClass `json:"class" bson:"class"`
-	Available bool      `json:"available" bson:"available"`
-}
-
 type Flight struct {
-	Departure     Airport    `json:"departure" bson:"departure"`
-	Arrival       Airport    `json:"arrival" bson:"arrival"`
-	Id            string     `json:"id,omitempty" bson:"_id,omitempty"`
-	Airline       string     `json:"airline" bson:"airline"`
-	Seats         []Seat     `json:"seats" bson:"seats"`
-	DepartureTime FlightTime `json:"departure_time" bson:"departure_time"`
-	ArrivalTime   FlightTime `json:"arrival_time" bson:"arrival_time"`
+	Departure     string               `json:"departure" bson:"departure"`
+	Arrival       string               `json:"arrival" bson:"arrival"`
+	Airline       string               `json:"airline" bson:"airline"`
+	Seats         []primitive.ObjectID `json:"seats" bson:"seats"`
+	DepartureTime FlightTime           `json:"departure_time" bson:"departure_time"`
+	ArrivalTime   FlightTime           `json:"arrival_time" bson:"arrival_time"`
+	Id            primitive.ObjectID   `json:"id,omitempty" bson:"_id,omitempty"`
 }
 
 type CreateFlightParams struct {
-	Departure     Airport    `json:"departure" bson:"departure"`
-	Arrival       Airport    `json:"arrival" bson:"arrival"`
+	Departure     string     `json:"departure" bson:"departure"`
+	Arrival       string     `json:"arrival" bson:"arrival"`
 	Airline       string     `json:"airline" bson:"airline"`
 	DepartureTime FlightTime `json:"departure_time" bson:"departure_time"`
 	ArrivalTime   FlightTime `json:"arrival_time" bson:"arrival_time"`
 }
 
 type UpdateFlightParams struct {
-	Seats         []Seat     `json:"seats,omitempty" bson:"seats,omitempty"`
-	DepartureTime FlightTime `json:"departure_time,omitempty" bson:"departure_time,omitempty"`
-	ArrivalTime   FlightTime `json:"arrival_time,omitempty" bson:"arrival_time,omitempty"`
-}
-
-type UpdateSeatParams struct {
-	FlightId string `json:"flight_id" bson:"flight_id"`
-	Status   bool   `json:"status" bson:"status"`
+	Seats         []primitive.ObjectID `json:"seats,omitempty" bson:"seats,omitempty"`
+	DepartureTime FlightTime           `json:"departure_time,omitempty" bson:"departure_time,omitempty"`
+	ArrivalTime   FlightTime           `json:"arrival_time,omitempty" bson:"arrival_time,omitempty"`
 }
 
 func NewFlightFromParams(params CreateFlightParams) (*Flight, error) {
@@ -62,6 +41,6 @@ func NewFlightFromParams(params CreateFlightParams) (*Flight, error) {
 		Airline:       params.Airline,
 		DepartureTime: params.DepartureTime,
 		ArrivalTime:   params.ArrivalTime,
-		Seats:         []Seat{},
+		Seats:         []primitive.ObjectID{},
 	}, nil
 }

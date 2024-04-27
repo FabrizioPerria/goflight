@@ -10,8 +10,9 @@ import (
 )
 
 type SeatStorer interface {
-	CreateSeat(ctx context.Context, user *types.User) (*types.User, error)
-	UpdateSeat(ctx context.Context, filter bson.M, values types.UpdateUserParams) (string, error)
+	CreateSeat(ctx context.Context, user *types.Seat) (*types.Seat, error)
+	UpdateSeat(ctx context.Context, filter bson.M, values types.UpdateSeatParams) (string, error)
+	GetSeats(ctx context.Context, filter bson.M) ([]*types.Seat, error)
 	Dropper
 }
 
@@ -38,11 +39,8 @@ func (db *MongoDbSeatStore) CreateSeat(ctx context.Context, seat *types.Seat) (*
 	if err != nil {
 		return nil, err
 	}
-	seat.Id = result.InsertedID.(primitive.ObjectID).Hex()
 
-	fid, _ := primitive.ObjectIDFromHex(seat.FlightId)
-
-	filter := bson.M{"_id": fid}
+	filter := bson.M{"_id": result.InsertedID}
 	update := bson.M{"$addToSet": bson.M{"seats": seat}}
 	_, err = db.flightStore.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
@@ -53,22 +51,28 @@ func (db *MongoDbSeatStore) CreateSeat(ctx context.Context, seat *types.Seat) (*
 }
 
 func (db *MongoDbSeatStore) UpdateSeat(ctx context.Context, filter bson.M, values types.UpdateSeatParams) (string, error) {
-	// update := bson.M{"$set": values}
-	// result, err := db.collection.UpdateOne(ctx, filter, update)
-	// if err != nil || result.ModifiedCount == 0 {
-	// 	return "", fmt.Errorf("seat not found")
-	// }
-	//
-	// update = bson.M{"$set": bson.M{"seats.$[elem].status": values.Status}}
-	//
-	// result, err = db.flightCollection.UpdateOne(ctx, filter, update)
-	// if err != nil || result.ModifiedCount == 0 {
-	// 	return "", fmt.Errorf("flight not found")
-	// }
+	update := bson.M{"$set": values}
+	result, err := db.collection.UpdateOne(ctx, filter, update)
+	if err != nil || result.ModifiedCount == 0 {
+		return "", err
+	}
 
-	return "", nil
+	return result.UpsertedID.(primitive.ObjectID).Hex(), err
 }
 
 func (db *MongoDbSeatStore) Drop(ctx context.Context) error {
 	return db.collection.Drop(ctx)
+}
+
+func (db *MongoDbSeatStore) GetSeats(ctx context.Context, filter bson.M) ([]*types.Seat, error) {
+	var cursor *mongo.Cursor
+	cursor, err := db.collection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]*types.Seat, 0)
+	err = cursor.All(ctx, &results)
+
+	return results, err
 }

@@ -22,21 +22,21 @@ const (
 	dbName = "goflight_test"
 )
 
-type testdb struct {
+type testUserDb struct {
 	UserStore db.UserStorer
 	Client    *mongo.Client
 }
 
-func setup() (*testdb, error) {
+func setupUsersDb() (*testUserDb, error) {
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
 	if err != nil {
 		return nil, err
 	}
 	db := db.NewMongoDbUserStore(client)
-	return &testdb{UserStore: db, Client: client}, nil
+	return &testUserDb{UserStore: db, Client: client}, nil
 }
 
-func teardown(t *testing.T, db *testdb) {
+func teardownUsersDb(t *testing.T, db *testUserDb) {
 	if err := db.UserStore.Drop(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -86,9 +86,9 @@ func getUsers(userHandler *UserHandler, app *fiber.App) (*http.Response, error) 
 }
 
 func TestPostCreateValidUser(t *testing.T) {
-	db, err := setup()
+	db, err := setupUsersDb()
 	assert.NoError(t, err)
-	defer teardown(t, db)
+	defer teardownUsersDb(t, db)
 	userHandler := UserHandler{UserStore: db.UserStore}
 
 	app := fiber.New()
@@ -112,9 +112,9 @@ func TestPostCreateValidUser(t *testing.T) {
 }
 
 func TestPostCreateInvalidUser(t *testing.T) {
-	db, err := setup()
+	db, err := setupUsersDb()
 	assert.NoError(t, err)
-	defer teardown(t, db)
+	defer teardownUsersDb(t, db)
 	userHandler := UserHandler{UserStore: db.UserStore}
 
 	app := fiber.New()
@@ -142,9 +142,9 @@ func TestPostCreateInvalidUser(t *testing.T) {
 }
 
 func TestGetUsersEmpty(t *testing.T) {
-	db, err := setup()
+	db, err := setupUsersDb()
 	assert.NoError(t, err)
-	defer teardown(t, db)
+	defer teardownUsersDb(t, db)
 	userHandler := UserHandler{UserStore: db.UserStore}
 
 	app := fiber.New()
@@ -163,9 +163,9 @@ func TestGetUsersEmpty(t *testing.T) {
 }
 
 func TestGetUsersNotEmpty(t *testing.T) {
-	db, err := setup()
+	db, err := setupUsersDb()
 	assert.NoError(t, err)
-	defer teardown(t, db)
+	defer teardownUsersDb(t, db)
 	userHandler := UserHandler{UserStore: db.UserStore}
 
 	app := fiber.New()
@@ -195,9 +195,9 @@ func TestGetUsersNotEmpty(t *testing.T) {
 }
 
 func TestGetUserById(t *testing.T) {
-	db, err := setup()
+	db, err := setupUsersDb()
 	assert.NoError(t, err)
-	defer teardown(t, db)
+	defer teardownUsersDb(t, db)
 	userHandler := UserHandler{UserStore: db.UserStore}
 
 	app := fiber.New()
@@ -234,9 +234,9 @@ func TestGetUserById(t *testing.T) {
 }
 
 func TestGetUserByIdNotFound(t *testing.T) {
-	db, err := setup()
+	db, err := setupUsersDb()
 	assert.NoError(t, err)
-	defer teardown(t, db)
+	defer teardownUsersDb(t, db)
 	userHandler := UserHandler{UserStore: db.UserStore}
 
 	app := fiber.New()
@@ -250,9 +250,9 @@ func TestGetUserByIdNotFound(t *testing.T) {
 }
 
 func TestDeleteUserById(t *testing.T) {
-	db, err := setup()
+	db, err := setupUsersDb()
 	assert.NoError(t, err)
-	defer teardown(t, db)
+	defer teardownUsersDb(t, db)
 	userHandler := UserHandler{UserStore: db.UserStore}
 
 	app := fiber.New()
@@ -281,9 +281,9 @@ func TestDeleteUserById(t *testing.T) {
 }
 
 func TestDeleteUserByIdNotFound(t *testing.T) {
-	db, err := setup()
+	db, err := setupUsersDb()
 	assert.NoError(t, err)
-	defer teardown(t, db)
+	defer teardownUsersDb(t, db)
 	userHandler := UserHandler{UserStore: db.UserStore}
 
 	app := fiber.New()
@@ -297,9 +297,9 @@ func TestDeleteUserByIdNotFound(t *testing.T) {
 }
 
 func TestDeleteAllUsers(t *testing.T) {
-	db, err := setup()
+	db, err := setupUsersDb()
 	assert.NoError(t, err)
-	defer teardown(t, db)
+	defer teardownUsersDb(t, db)
 	userHandler := UserHandler{UserStore: db.UserStore}
 
 	app := fiber.New()
@@ -340,9 +340,9 @@ func TestDeleteAllUsers(t *testing.T) {
 }
 
 func TestDeleteAllUsersEmpty(t *testing.T) {
-	db, err := setup()
+	db, err := setupUsersDb()
 	assert.NoError(t, err)
-	defer teardown(t, db)
+	defer teardownUsersDb(t, db)
 	userHandler := UserHandler{UserStore: db.UserStore}
 
 	app := fiber.New()
@@ -356,9 +356,9 @@ func TestDeleteAllUsersEmpty(t *testing.T) {
 }
 
 func TestPutUser(t *testing.T) {
-	db, err := setup()
+	db, err := setupUsersDb()
 	assert.NoError(t, err)
-	defer teardown(t, db)
+	defer teardownUsersDb(t, db)
 	userHandler := UserHandler{UserStore: db.UserStore}
 
 	app := fiber.New()
@@ -412,9 +412,9 @@ func TestPutUser(t *testing.T) {
 }
 
 func TestPutUserNotFound(t *testing.T) {
-	db, err := setup()
+	db, err := setupUsersDb()
 	assert.NoError(t, err)
-	defer teardown(t, db)
+	defer teardownUsersDb(t, db)
 	userHandler := UserHandler{UserStore: db.UserStore}
 
 	app := fiber.New()
