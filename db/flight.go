@@ -12,7 +12,7 @@ import (
 
 type FlightStorer interface {
 	CreateFlight(ctx context.Context, flight *types.Flight) (*types.Flight, error)
-	GetFlightById(ctx context.Context, id string) (*types.Flight, error)
+	GetFlight(ctx context.Context, filter bson.M) (*types.Flight, error)
 	GetFlights(ctx context.Context) ([]*types.Flight, error)
 	UpdateFlight(ctx context.Context, filter bson.M, values types.UpdateFlightParams) (string, error)
 	Dropper
@@ -34,14 +34,9 @@ func NewMongoDbFlightStore(client *mongo.Client) *MongoDbFlightStore {
 	}
 }
 
-func (db *MongoDbFlightStore) GetFlightById(ctx context.Context, id string) (*types.Flight, error) {
-	oid, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, err
-	}
-
+func (db *MongoDbFlightStore) GetFlight(ctx context.Context, filter bson.M) (*types.Flight, error) {
 	var flight types.Flight
-	err = db.collection.FindOne(ctx, bson.M{"_id": oid}).Decode(&flight)
+	err := db.collection.FindOne(ctx, filter).Decode(&flight)
 	if err != nil {
 		return nil, err
 	}

@@ -18,9 +18,14 @@ func NewFlightHandler(store db.Store) *FlightHandler {
 	}
 }
 
-func (h *FlightHandler) HandleGetFlightByIdv1(ctx *fiber.Ctx) error {
+func (h *FlightHandler) HandleGetFlightv1(ctx *fiber.Ctx) error {
 	id := ctx.Params("fid")
-	flight, err := h.store.Flight.GetFlightById(ctx.Context(), id)
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	filter := bson.M{"_id": oid}
+	flight, err := h.store.Flight.GetFlight(ctx.Context(), filter)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -67,7 +72,7 @@ func (h *FlightHandler) HandlePostCreateFlightv1(ctx *fiber.Ctx) error {
 	}
 
 	seatIDs := []primitive.ObjectID{}
-	for i := 0; i < 50; i++ {
+	for i := 0; i < createFlightParams.NumberOfSeats; i++ {
 		seat := types.Seat{
 			FlightId:  primitive.ObjectID(flight.Id),
 			Number:    i,

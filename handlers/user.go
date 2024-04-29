@@ -20,7 +20,13 @@ func NewUserHandler(store db.Store) *UserHandler {
 
 func (h *UserHandler) HandleGetUserv1(ctx *fiber.Ctx) error {
 	id := ctx.Params("uid")
-	user, err := h.store.User.GetUserById(ctx.Context(), id)
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	filter := bson.M{"_id": oid}
+
+	user, err := h.store.User.GetUser(ctx.Context(), filter)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -60,8 +66,14 @@ func (h *UserHandler) HandlePostCreateUserv1(ctx *fiber.Ctx) error {
 }
 
 func (h *UserHandler) HandleDeleteUserv1(ctx *fiber.Ctx) error {
-	userID := ctx.Params("uid")
-	id, err := h.store.User.DeleteUserById(ctx.Context(), userID)
+	userId := ctx.Params("uid")
+	oid, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	filter := bson.M{"_id": oid}
+
+	id, err := h.store.User.DeleteUser(ctx.Context(), filter)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}

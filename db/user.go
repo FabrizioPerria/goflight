@@ -16,9 +16,9 @@ type Dropper interface {
 
 type UserStorer interface {
 	CreateUser(ctx context.Context, user *types.User) (*types.User, error)
-	GetUserById(ctx context.Context, id string) (*types.User, error)
+	GetUser(ctx context.Context, filter bson.M) (*types.User, error)
 	GetUsers(ctx context.Context) ([]*types.User, error)
-	DeleteUserById(ctx context.Context, id string) (string, error)
+	DeleteUser(ctx context.Context, filter bson.M) (string, error)
 	UpdateUser(ctx context.Context, filter bson.M, values types.UpdateUserParams) (string, error)
 	Dropper
 }
@@ -39,15 +39,13 @@ func NewMongoDbUserStore(client *mongo.Client) *MongoDbUserStore {
 	}
 }
 
-func (db *MongoDbUserStore) GetUserById(ctx context.Context, id string) (*types.User, error) {
-	oid, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, fmt.Errorf("invalid id format")
-	}
+func (db *MongoDbUserStore) GetUser(ctx context.Context, filter bson.M) (*types.User, error) {
 	user := &types.User{}
-	err = db.collection.FindOne(ctx, bson.M{"_id": oid}).Decode(&user)
+	if err := db.collection.FindOne(ctx, filter).Decode(&user); err != nil {
+		return nil, err
+	}
 
-	return user, err
+	return user, nil
 }
 
 func (db *MongoDbUserStore) GetUsers(ctx context.Context) ([]*types.User, error) {
@@ -69,17 +67,13 @@ func (db *MongoDbUserStore) CreateUser(ctx context.Context, user *types.User) (*
 	return user, err
 }
 
-func (db *MongoDbUserStore) DeleteUserById(ctx context.Context, id string) (string, error) {
-	oid, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return "", err
-	}
-	res, err := db.collection.DeleteOne(ctx, bson.M{"_id": oid})
+func (db *MongoDbUserStore) DeleteUser(ctx context.Context, filter bson.M) (string, error) {
+	res, err := db.collection.DeleteOne(ctx, filter)
 	if err != nil || res.DeletedCount == 0 {
-		return "", fmt.Errorf("user %s not found", id)
+		return "", fmt.Errorf("user not found")
 	}
 
-	return id, nil
+	return "", nil
 }
 
 func (db *MongoDbUserStore) Drop(ctx context.Context) error {

@@ -1,5 +1,22 @@
-POST {{URL}}/user
+POST {{BASE_URL}}/auth
 Content-Type: application/json
+
+{
+    "email": "a.b@c.d",
+    "password": "password"
+}
+
+--{%
+local body = context.json_decode(context.result.body)
+context.set_env("token", body.token)
+--%}
+
+###
+
+POST {{URL}}/users
+Content-Type: application/json
+X-Api-Token: {{token}}
+
 {
     "first_name": "John",
     "last_name": "Doe",
@@ -10,24 +27,33 @@ Content-Type: application/json
 
 ###
 
-GET {{URL}}/user
+GET {{URL}}/users
+Content-Type: application/json
+X-Api-Token: {{token}}
 
 ###
 
 GET {{URL}}/user/6623898134bfe8c1436a3425
+Content-Type: application/json
+X-Api-Token: {{token}}
 
 ###
 
 DELETE {{URL}}/user
+Content-Type: application/json
+X-Api-Token: {{token}}
 
 ###
 
 DELETE {{URL}}/user/6623b8a8c8730454440a42df
+Content-Type: application/json
+X-Api-Token: {{token}}
 
 ###
 
 PUT {{URL}}/user/6623c43a7773e2e9682b368d
 Content-Type: application/json
+X-Api-Token: {{token}}
 {
     "email": "dudely@dude.dud"
 }

@@ -18,6 +18,7 @@ type CreateFlightParams struct {
 	Airline       string `json:"airline" bson:"airline"`
 	DepartureTime string `json:"departure_time" bson:"departure_time"`
 	ArrivalTime   string `json:"arrival_time" bson:"arrival_time"`
+	NumberOfSeats int    `json:"number_of_seats" bson:"number_of_seats"`
 }
 
 type UpdateFlightParams struct {

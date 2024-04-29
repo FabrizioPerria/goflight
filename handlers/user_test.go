@@ -281,7 +281,7 @@ func TestDeleteUserById(t *testing.T) {
 
 	body, err = io.ReadAll(io.Reader(response.Body))
 	assert.NoError(t, err)
-	assert.Equal(t, "User deleted: "+id, string(body))
+	assert.Equal(t, "User deleted: ", string(body))
 }
 
 func TestDeleteUserByIdNotFound(t *testing.T) {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/fabrizioperria/goflight/db"
 	"github.com/fabrizioperria/goflight/handlers"
+	"github.com/fabrizioperria/goflight/handlers/middleware"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -45,10 +46,13 @@ func main() {
 
 		userHandler   = handlers.NewUserHandler(mainStore)
 		flightHandler = handlers.NewFlightHandler(mainStore)
+		authHandler   = handlers.NewAuthHandler(mainStore)
 
 		app   = fiber.New(config)
-		apiv1 = app.Group("/api/v1/")
+		auth  = app.Group("/api")
+		apiv1 = app.Group("/api/v1/", middleware.JWTAuthentication)
 	)
+	auth.Post("/auth", authHandler.HandleAuthenticate)
 
 	apiv1.Post("/users", userHandler.HandlePostCreateUserv1)
 	apiv1.Delete("/users", userHandler.HandleDeleteAllUsersv1)
@@ -60,7 +64,7 @@ func main() {
 	apiv1.Get("/flights", flightHandler.HandleGetFlightsv1)
 	apiv1.Post("/flights", flightHandler.HandlePostCreateFlightv1)
 	apiv1.Delete("/flights", flightHandler.HandleDeleteAllFlightsv1)
-	apiv1.Get("/flights/:fid", flightHandler.HandleGetFlightByIdv1)
+	apiv1.Get("/flights/:fid", flightHandler.HandleGetFlightv1)
 	apiv1.Get("/flights/:fid/seats", flightHandler.HandleGetSeatsv1)
 	apiv1.Get("/flights/:fid/seats/:sid", flightHandler.HandleGetSeatsv1)
 

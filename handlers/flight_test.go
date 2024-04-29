@@ -108,7 +108,7 @@ func TestPostCreateFlightv1(t *testing.T) {
 	assert.Len(t, bodyT.Seats, 50)
 	for i, seatId := range bodyT.Seats {
 		filter := bson.M{"_id": seatId}
-		seat, _ := db.Store.Seat.GetSeatById(context.Background(), filter)
+		seat, _ := db.Store.Seat.GetSeat(context.Background(), filter)
 		assert.Equal(t, bodyT.Id, seat.FlightId)
 		assert.Equal(t, i, seat.Number)
 		assert.True(t, seat.Available)
@@ -191,7 +191,7 @@ func TestGetFlightByIdv1(t *testing.T) {
 	err = json.Unmarshal(body, &bodyT)
 	assert.NoError(t, err)
 
-	app.Get("/api/v1/flights/:fid", flightHandler.HandleGetFlightByIdv1)
+	app.Get("/api/v1/flights/:fid", flightHandler.HandleGetFlightv1)
 
 	req := httptest.NewRequest("GET", "/api/v1/flights/"+bodyT.Id.Hex(), nil)
 	req.Header.Add("Content-Type", "application/json")
@@ -248,7 +248,7 @@ func TestPutFlightv1(t *testing.T) {
 
 	req = httptest.NewRequest("GET", "/api/v1/flights/"+id, nil)
 	req.Header.Add("Content-Type", "application/json")
-	app.Get("/api/v1/flights/:fid", flightHandler.HandleGetFlightByIdv1)
+	app.Get("/api/v1/flights/:fid", flightHandler.HandleGetFlightv1)
 	response, error = app.Test(req)
 	assert.NoError(t, error)
 	assert.Equal(t, 200, response.StatusCode)

@@ -21,6 +21,19 @@ func SeedUsers(client *mongo.Client) {
 	userDb.Drop(context.Background())
 
 	fmt.Println("Seeding users")
+	userParams := types.CreateUserParams{
+		Email:         "a.b@c.d",
+		PlainPassword: "password",
+		Phone:         "1234567890",
+		FirstName:     "Dude",
+		LastName:      "Dudely",
+	}
+	user, err := types.NewUserFromParams(userParams)
+	if err != nil {
+		fmt.Println(err)
+	}
+	userDb.CreateUser(context.Background(), user)
+
 	for i := 0; i < 10; i++ {
 		userParams := types.CreateUserParams{
 			Email:         gofakeit.Email(),
@@ -53,6 +66,7 @@ func SeedFlights(client *mongo.Client) {
 			Arrival:       gofakeit.City(),
 			DepartureTime: gofakeit.Date().Format(time.RFC3339),
 			ArrivalTime:   gofakeit.Date().Format(time.RFC3339),
+			NumberOfSeats: gofakeit.Number(10, 100),
 		}
 		flight, err := types.NewFlightFromParams(flightParams)
 		if err != nil {
@@ -69,7 +83,7 @@ func SeedFlights(client *mongo.Client) {
 			ArrivalTime:   newflight.ArrivalTime,
 			DepartureTime: newflight.DepartureTime,
 		}
-		for j := 0; j < 10; j++ {
+		for j := 0; j < flightParams.NumberOfSeats; j++ {
 			price, _ := money.NewAmountFromFloat64("USD", gofakeit.Float64Range(10, 1000))
 			price = price.Round(2)
 			priceFloat, _ := price.Float64()

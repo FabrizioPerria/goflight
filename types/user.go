@@ -42,6 +42,11 @@ func isValidEmail(email string) bool {
 	return validEmail.MatchString(email)
 }
 
+func (user *User) Authenticate(password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(user.EncryptedPassword), []byte(password))
+	return err == nil
+}
+
 func (params CreateUserParams) Validate() map[string]string {
 	errors := make(map[string]string)
 	if len(params.FirstName) < minFirstNameLength {
