@@ -152,7 +152,7 @@ func TestGetUsersEmpty(t *testing.T) {
 
 	response, err := getUsers(&userHandler, app)
 	assert.NoError(t, err)
-	assert.Equal(t, 200, response.StatusCode)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 
 	body, err := io.ReadAll(io.Reader(response.Body))
 	assert.NoError(t, err)
@@ -180,7 +180,7 @@ func TestGetUsersNotEmpty(t *testing.T) {
 	assert.NoError(t, err)
 	body, err := io.ReadAll(io.Reader(response.Body))
 	assert.NoError(t, err)
-	assert.Equal(t, 200, response.StatusCode)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 
 	bodyT := []types.User{}
 	err = json.Unmarshal(body, &bodyT)
@@ -221,7 +221,7 @@ func TestGetUserById(t *testing.T) {
 	app.Get("/api/v1/users/:uid", userHandler.HandleGetUserv1)
 	response, err = app.Test(req)
 	assert.NoError(t, err)
-	assert.Equal(t, 200, response.StatusCode)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 
 	body, err = io.ReadAll(io.Reader(response.Body))
 	assert.NoError(t, err)
@@ -277,7 +277,7 @@ func TestDeleteUserById(t *testing.T) {
 	app.Delete("/api/v1/users/:uid", userHandler.HandleDeleteUserv1)
 	response, err = app.Test(req)
 	assert.NoError(t, err)
-	assert.Equal(t, 200, response.StatusCode)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 
 	body, err = io.ReadAll(io.Reader(response.Body))
 	assert.NoError(t, err)
@@ -315,7 +315,7 @@ func TestDeleteAllUsers(t *testing.T) {
 
 	response, err = getUsers(&userHandler, app)
 	assert.NoError(t, err)
-	assert.Equal(t, 200, response.StatusCode)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 
 	body, err := io.ReadAll(io.Reader(response.Body))
 	assert.NoError(t, err)
@@ -329,11 +329,11 @@ func TestDeleteAllUsers(t *testing.T) {
 	app.Delete("/api/v1/user", userHandler.HandleDeleteAllUsersv1)
 	response, err = app.Test(req)
 	assert.NoError(t, err)
-	assert.Equal(t, 200, response.StatusCode)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 
 	response, err = getUsers(&userHandler, app)
 	assert.NoError(t, err)
-	assert.Equal(t, 200, response.StatusCode)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 
 	body, err = io.ReadAll(io.Reader(response.Body))
 	assert.NoError(t, err)
@@ -356,7 +356,7 @@ func TestDeleteAllUsersEmpty(t *testing.T) {
 	app.Delete("/api/v1/user", userHandler.HandleDeleteAllUsersv1)
 	response, err := app.Test(req)
 	assert.NoError(t, err)
-	assert.Equal(t, 200, response.StatusCode)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 }
 
 func TestPutUser(t *testing.T) {
@@ -392,14 +392,14 @@ func TestPutUser(t *testing.T) {
 	app.Put("/api/v1/users/:uid", userHandler.HandlePutUserv1)
 	response, err = app.Test(req)
 	assert.NoError(t, err)
-	assert.Equal(t, 200, response.StatusCode)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 
 	req = httptest.NewRequest("GET", "/api/v1/users/"+id, nil)
 	req.Header.Add("Content-Type", "application/json")
 	app.Get("/api/v1/users/:uid", userHandler.HandleGetUserv1)
 	response, err = app.Test(req)
 	assert.NoError(t, err)
-	assert.Equal(t, 200, response.StatusCode)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 
 	body, err = io.ReadAll(io.Reader(response.Body))
 	assert.NoError(t, err)

@@ -7,6 +7,7 @@ toolchain go1.22.2
 require (
 	github.com/brianvoe/gofakeit/v7 v7.0.2
 	github.com/gofiber/fiber/v2 v2.52.4
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/govalues/money v0.2.2
 	github.com/stretchr/testify v1.9.0
 	go.mongodb.org/mongo-driver v1.15.0

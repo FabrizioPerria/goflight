@@ -56,6 +56,7 @@ func getValidFlight() types.CreateFlightParams {
 		Arrival:       "LAX",
 		DepartureTime: "2021-01-01T00:00:00Z",
 		ArrivalTime:   "2021-01-01T08:00:00Z",
+		NumberOfSeats: 50,
 	}
 }
 
@@ -104,7 +105,7 @@ func TestPostCreateFlightv1(t *testing.T) {
 	assert.Equal(t, flight.DepartureTime, bodyT.DepartureTime)
 	assert.Equal(t, flight.ArrivalTime, bodyT.ArrivalTime)
 
-	// checke seats
+	// check seats
 	assert.Len(t, bodyT.Seats, 50)
 	for i, seatId := range bodyT.Seats {
 		filter := bson.M{"_id": seatId}
@@ -132,7 +133,7 @@ func TestGetFlightsv1(t *testing.T) {
 
 	response, error := getFlights(&flightHandler, app)
 	assert.NoError(t, error)
-	assert.Equal(t, 200, response.StatusCode)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 
 	body, err := io.ReadAll(io.Reader(response.Body))
 	assert.NoError(t, err)
@@ -160,11 +161,11 @@ func TestDeleteAllFlightsv1(t *testing.T) {
 	req.Header.Add("Content-Type", "application/json")
 	response, error := app.Test(req)
 	assert.NoError(t, error)
-	assert.Equal(t, 200, response.StatusCode)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 
 	response, error = getFlights(&flightHandler, app)
 	assert.NoError(t, error)
-	assert.Equal(t, 200, response.StatusCode)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 
 	body, err := io.ReadAll(io.Reader(response.Body))
 	assert.NoError(t, err)
@@ -197,7 +198,7 @@ func TestGetFlightByIdv1(t *testing.T) {
 	req.Header.Add("Content-Type", "application/json")
 	response, error = app.Test(req)
 	assert.NoError(t, error)
-	assert.Equal(t, 200, response.StatusCode)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 
 	body, err = io.ReadAll(io.Reader(response.Body))
 	assert.NoError(t, err)
@@ -244,14 +245,14 @@ func TestPutFlightv1(t *testing.T) {
 
 	response, error = app.Test(req)
 	assert.NoError(t, error)
-	assert.Equal(t, 200, response.StatusCode)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 
 	req = httptest.NewRequest("GET", "/api/v1/flights/"+id, nil)
 	req.Header.Add("Content-Type", "application/json")
 	app.Get("/api/v1/flights/:fid", flightHandler.HandleGetFlightv1)
 	response, error = app.Test(req)
 	assert.NoError(t, error)
-	assert.Equal(t, 200, response.StatusCode)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 
 	body, err = io.ReadAll(io.Reader(response.Body))
 	assert.NoError(t, err)
