@@ -121,3 +121,53 @@ func (h *FlightHandler) HandleDeleteAllFlightsv1(ctx *fiber.Ctx) error {
 	}
 	return ctx.Status(fiber.StatusOK).SendString("Flights deleted")
 }
+
+func (h *FlightHandler) HandlePostCreateReservationv1(ctx *fiber.Ctx) error {
+	flightID := ctx.Params("fid")
+	fid, err := primitive.ObjectIDFromHex(flightID)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	filter := bson.M{"_id": fid}
+	flight, err := h.store.Flight.GetFlight(ctx.Context(), filter)
+	if err != nil {
+		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if len(flight.Seats) == 0 {
+		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "No seats available"})
+	}
+
+	seatID := ctx.Params("sid")
+	sid, err := primitive.ObjectIDFromHex(seatID)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	user := ctx.Context().UserValue("user").(*types.User)
+	reservation, err := h.store.Seat.ReserveSeat(ctx.Context(), bson.M{"_id": sid}, user.Id)
+	if err != nil {
+		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Seat not found " + err.Error()})
+	}
+
+	return ctx.Status(fiber.StatusCreated).JSON(reservation)
+}
+
+func (h *FlightHandler) HandleGetSeatv1(ctx *fiber.Ctx) error {
+	flightID := ctx.Params("fid")
+	fid, err := primitive.ObjectIDFromHex(flightID)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	seatID := ctx.Params("sid")
+	sid, err := primitive.ObjectIDFromHex(seatID)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	filter := bson.M{"_id": sid, "flight_id": fid}
+	seat, err := h.store.Seat.GetSeat(ctx.Context(), filter)
+	if err != nil {
+		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
+	}
+	return ctx.JSON(seat)
+}

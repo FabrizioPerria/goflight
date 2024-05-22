@@ -31,6 +31,6 @@ type Seat struct {
 }
 
 type UpdateSeatParams struct {
-	Price  float64 `json:"price" bson:"price"`
-	Status bool    `json:"status" bson:"status"`
+	Price     float64 `json:"price" bson:"price"`
+	Available bool    `json:"available" bson:"available"`
 }

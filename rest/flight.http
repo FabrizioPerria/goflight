@@ -1,27 +1,62 @@
+POST {{BASE_URL}}/auth
+Content-Type: application/json
+
+{
+    "email": "a.b@c.d",
+    "password": "password"
+}
+
+--{%
+local body = context.json_decode(context.result.body)
+context.set_env("token", body.token)
+--%}
+
+###
+
 POST {{URL}}/flights
 Content-Type: application/json
+X-Api-Token: {{token}}
 {
     "airline": "Delta",
     "departure": "JFK",
     "arrival": "LAX",
     "departure_time": "2021-12-12T12:00:00Z",
-    "arrival_time": "2021-12-12T14:00:00Z"
+    "arrival_time": "2021-12-12T14:00:00Z",
+    "number_of_seats": 100
 }
+--{%
+local body = context.json_decode(context.result.body)
+context.set_env("flightId", body.id)
+context.set_env("firstSeat", body.seats[1])
+--%}
+# :vim.env.flightId
 
 ###
 
-GET {{URL}}/flights/662cc6cd71c1d1276d282982
+GET {{URL}}/flights/{{flightId}}
+X-Api-Token: {{token}}
 
 ###
 
-GET {{URL}}/flights/662cc6cd71c1d1276d282982/seats
+GET {{URL}}/flights/{{flightId}}/seats
+X-Api-Token: {{token}}
+
+###
+GET {{URL}}/flights/{{flightId}}/seats/{{firstSeat}}
+X-Api-Token: {{token}}
+
+###
+POST {{URL}}/flights/{{flightId}}/seats/{{firstSeat}}/reservations
+X-Api-Token: {{token}}
 
 ###
 
 GET {{URL}}/flights
+X-Api-Token: {{token}}
 
 ###
 
 DELETE {{URL}}/flights
+X-Api-Token: {{token}}
 
 ###

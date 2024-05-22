@@ -16,6 +16,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+var (
+	users        = []types.User{}
+	flights      = []types.Flight{}
+	reservations = []types.Reservation{}
+)
+
 func SeedUsers(client *mongo.Client) {
 	userDb := db.NewMongoDbUserStore(client)
 	userDb.Drop(context.Background())
@@ -33,6 +39,7 @@ func SeedUsers(client *mongo.Client) {
 		fmt.Println(err)
 	}
 	userDb.CreateUser(context.Background(), user)
+	users = append(users, *user)
 
 	for i := 0; i < 10; i++ {
 		userParams := types.CreateUserParams{
@@ -48,13 +55,16 @@ func SeedUsers(client *mongo.Client) {
 			continue
 		}
 		userDb.CreateUser(context.Background(), user)
+		users = append(users, *user)
 	}
 }
 
 func SeedFlights(client *mongo.Client) {
 	flightDb := db.NewMongoDbFlightStore(client)
 	flightDb.Drop(context.Background())
-	seatDb := db.NewMongoDbSeatStore(client, *flightDb)
+	reservationDb := db.NewMongoDbReservationStore(client)
+	reservationDb.Drop(context.Background())
+	seatDb := db.NewMongoDbSeatStore(client, *flightDb, *reservationDb)
 	seatDb.Drop(context.Background())
 
 	fmt.Println("Seeding flights")
@@ -110,19 +120,43 @@ func SeedFlights(client *mongo.Client) {
 			fmt.Println(err)
 			continue
 		}
+		newflight.Seats = updateData.Seats
+		flights = append(flights, *newflight)
+	}
+}
+
+func SeedReservations(client *mongo.Client) {
+	reservationDb := db.NewMongoDbReservationStore(client)
+	reservationDb.Drop(context.Background())
+
+	fmt.Println("Seeding reservations")
+	for i := 0; i < 10; i++ {
+		flight := flights[gofakeit.Number(0, len(flights)-1)]
+		seat := flight.Seats[gofakeit.Number(0, len(flight.Seats)-1)]
+		user := users[gofakeit.Number(0, len(users)-1)]
+		reservation := &types.Reservation{
+			UserId: user.Id,
+			SeatId: seat,
+		}
+		_, err := reservationDb.CreateReservation(context.Background(), reservation)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
 	}
 }
 
 const (
-	uri = "mongodb://localhost:27017"
+	uri = "mongodb://mongo1:27017"
 )
 
 func main() {
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri).SetReplicaSet("rs0"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	SeedUsers(client)
 	SeedFlights(client)
+	SeedReservations(client)
 }

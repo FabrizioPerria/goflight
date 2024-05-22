@@ -38,11 +38,12 @@ func main() {
 		}
 	}()
 	var (
-		userStore   = db.NewMongoDbUserStore(client)
-		flightStore = db.NewMongoDbFlightStore(client)
-		seatStore   = db.NewMongoDbSeatStore(client, *flightStore)
+		userStore        = db.NewMongoDbUserStore(client)
+		flightStore      = db.NewMongoDbFlightStore(client)
+		reservationStore = db.NewMongoDbReservationStore(client)
+		seatStore        = db.NewMongoDbSeatStore(client, *flightStore, *reservationStore)
 
-		mainStore = db.Store{User: userStore, Flight: flightStore, Seat: seatStore}
+		mainStore = db.Store{User: userStore, Flight: flightStore, Seat: seatStore, Reservation: reservationStore}
 
 		userHandler   = handlers.NewUserHandler(mainStore)
 		flightHandler = handlers.NewFlightHandler(mainStore)
@@ -50,7 +51,7 @@ func main() {
 
 		app   = fiber.New(config)
 		auth  = app.Group("/api")
-		apiv1 = app.Group("/api/v1/", middleware.JWTAuthentication)
+		apiv1 = app.Group("/api/v1/", middleware.JWTAuthentication(userStore))
 	)
 	auth.Post("/auth", authHandler.HandleAuthenticate)
 
@@ -66,7 +67,9 @@ func main() {
 	apiv1.Delete("/flights", flightHandler.HandleDeleteAllFlightsv1)
 	apiv1.Get("/flights/:fid", flightHandler.HandleGetFlightv1)
 	apiv1.Get("/flights/:fid/seats", flightHandler.HandleGetSeatsv1)
-	apiv1.Get("/flights/:fid/seats/:sid", flightHandler.HandleGetSeatsv1)
+	apiv1.Get("/flights/:fid/seats/:sid", flightHandler.HandleGetSeatv1)
+
+	apiv1.Post("/flights/:fid/seats/:sid/reservations", flightHandler.HandlePostCreateReservationv1)
 
 	app.Listen(*listenAddress)
 }

@@ -1,3 +1,6 @@
 bin/**/*
 tmp/**/*
+mongo.env
+rs_keyfile
+**/.DS_Store
 

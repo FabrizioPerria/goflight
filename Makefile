@@ -4,9 +4,15 @@ setup-env:
 	@go install github.com/cosmtrek/air@latest
 	@open -a docker && while ! docker info > /dev/null 2>&1; do sleep 1 ; done
 	@docker image pull mongo:latest
+	@docker network create mongonet
 
-mongo: clean-container
-	@docker run --name mongodb -d  -p 27017:27017 mongo:latest
+key:
+	rm -rf ./rs_keyfile
+	openssl rand -base64 756 > ./rs_keyfile
+	chmod 0400 ./rs_keyfile
+
+mongo: clean-container key
+	@docker compose up -d --wait 
 
 new-db:
 	@go run scripts/db-starter.go
@@ -24,7 +30,7 @@ clean-server:
 	@lsof -i :5001 -t | grep '[0-9]*' | xargs kill -9 || true
 
 clean-container:
-	@docker inspect --format '{{json .State.Running}}' mongodb 2>/dev/null | grep true && docker stop mongodb && docker rm mongodb || true
+	@docker-compose down
 
 clean: clean-server clean-container
 
