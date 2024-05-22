@@ -124,7 +124,6 @@ func (db *MongoDbSeatStore) ReserveSeat(ctx context.Context, filter bson.M, user
 		if err != nil {
 			return nil, err
 		}
-		return nil, fmt.Errorf("fake error")
 
 		filter = bson.M{"_id": seat.FlightId}
 		update := bson.M{"$pull": bson.M{"seats": seat.Id}}

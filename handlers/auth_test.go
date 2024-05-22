@@ -82,7 +82,8 @@ func TestAuthenticate(t *testing.T) {
 	token := authResponseDecoded.Token
 
 	assert.NotEmpty(t, token)
-	app.Use(middleware.JWTAuthentication)
+
+	app.Use("/api/v1", middleware.JWTAuthentication(db.Store.User))
 
 	app.Get("/api/v1/users", userHandler.HandleGetUsersv1)
 
