@@ -2,16 +2,21 @@ package db
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/fabrizioperria/goflight/types"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
 type ReservationStorer interface {
-	CreateReservation(ctx context.Context, user *types.Reservation) (*types.Reservation, error)
+	CreateReservation(ctx context.Context, filter bson.M, userId primitive.ObjectID) (*types.Reservation, error)
 	GetReservations(ctx context.Context) ([]*types.Reservation, error)
 	GetReservation(ctx context.Context, filter bson.M) (*types.Reservation, error)
 	DeleteReservation(ctx context.Context, filter bson.M) error
@@ -19,29 +24,79 @@ type ReservationStorer interface {
 }
 
 type MongoDbReservationStore struct {
-	client     *mongo.Client
-	collection *mongo.Collection
+	client      *mongo.Client
+	collection  *mongo.Collection
+	flightStore MongoDbFlightStore
+	seatStore   MongoDbSeatStore
 }
 
 const (
 	reservationCollection = "reservations"
 )
 
-func NewMongoDbReservationStore(client *mongo.Client) *MongoDbReservationStore {
+func NewMongoDbReservationStore(client *mongo.Client, flightStore MongoDbFlightStore, seatStore MongoDbSeatStore) *MongoDbReservationStore {
 	return &MongoDbReservationStore{
-		client:     client,
-		collection: client.Database(DBNAME).Collection(reservationCollection),
+		client:      client,
+		collection:  client.Database(DBNAME).Collection(reservationCollection),
+		flightStore: flightStore,
+		seatStore:   seatStore,
 	}
 }
 
-func (db *MongoDbReservationStore) CreateReservation(ctx context.Context, reservation *types.Reservation) (*types.Reservation, error) {
-	result, err := db.collection.InsertOne(ctx, reservation)
+func (db *MongoDbReservationStore) CreateReservation(ctx context.Context, filter bson.M, userId primitive.ObjectID) (*types.Reservation, error) {
+	session, err := db.client.StartSession()
 	if err != nil {
 		return nil, err
 	}
-	reservation.Id = result.InsertedID.(primitive.ObjectID)
+	defer session.EndSession(ctx)
 
-	return reservation, err
+	wc := writeconcern.New(writeconcern.WMajority())
+	rc := readconcern.Snapshot()
+	txnOpts := options.Transaction().SetWriteConcern(wc).SetReadConcern(rc)
+
+	callback := func(sessionContext mongo.SessionContext) (interface{}, error) {
+		seat, err := db.seatStore.GetSeat(sessionContext, filter)
+		if err != nil {
+			return nil, err
+		}
+
+		if !seat.Available {
+			return nil, fmt.Errorf("seat not available")
+		}
+
+		if _, err = db.seatStore.UpdateSeat(sessionContext, filter, types.UpdateSeatParams{Available: false, Price: seat.Price}); err != nil {
+			return nil, err
+		}
+
+		filter = bson.M{"_id": seat.FlightId}
+		update := bson.M{"$pull": bson.M{"seats": seat.Id}}
+		_, err = db.flightStore.collection.UpdateOne(sessionContext, filter, update)
+		if err != nil {
+			return nil, err
+		}
+
+		reservationParams := types.CreateReservationParams{
+			UserId: userId,
+			SeatId: seat.Id,
+		}
+		reservation := types.ReservationFromParams(&reservationParams)
+
+		reservation.ReservationDate = time.Now().Format(time.RFC3339)
+		result, err := db.collection.InsertOne(ctx, reservation)
+		if err != nil {
+			return nil, err
+		}
+		reservation.Id = result.InsertedID.(primitive.ObjectID)
+
+		return reservation.Id, nil
+	}
+
+	reservation, err := session.WithTransaction(ctx, callback, txnOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	return reservation.(*types.Reservation), nil
 }
 
 func (db *MongoDbReservationStore) GetReservations(ctx context.Context) ([]*types.Reservation, error) {
@@ -67,7 +122,44 @@ func (db *MongoDbReservationStore) GetReservation(ctx context.Context, filter bs
 }
 
 func (db *MongoDbReservationStore) DeleteReservation(ctx context.Context, filter bson.M) error {
-	_, err := db.collection.DeleteOne(ctx, filter)
+	session, err := db.client.StartSession()
+	if err != nil {
+		return err
+	}
+	defer session.EndSession(ctx)
+
+	wc := writeconcern.New(writeconcern.WMajority())
+	rc := readconcern.Snapshot()
+	txnOpts := options.Transaction().SetWriteConcern(wc).SetReadConcern(rc)
+
+	callback := func(sessionContext mongo.SessionContext) (interface{}, error) {
+		reservation, err := db.GetReservation(ctx, filter)
+		if err != nil {
+			return nil, err
+		}
+
+		seatFilter := bson.M{"_id": reservation.SeatId}
+		seat, err := db.seatStore.GetSeat(ctx, seatFilter)
+		if err != nil {
+			return nil, err
+		}
+
+		if _, err = db.seatStore.UpdateSeat(ctx, seatFilter, types.UpdateSeatParams{Available: true, Price: seat.Price}); err != nil {
+			return nil, err
+		}
+
+		filter = bson.M{"_id": seat.FlightId}
+		update := bson.M{"$push": bson.M{"seats": seat.Id}}
+		_, err = db.flightStore.collection.UpdateOne(sessionContext, filter, update)
+		if err != nil {
+			return nil, err
+		}
+
+		result, err := db.collection.DeleteOne(ctx, filter)
+
+		return result.DeletedCount, err
+	}
+	_, err = session.WithTransaction(ctx, callback, txnOpts)
 	return err
 }
 

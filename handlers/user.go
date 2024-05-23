@@ -53,7 +53,31 @@ func (h *UserHandler) HandlePostCreateUserv1(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"errors": errors})
 	}
 
-	user, err := types.NewUserFromParams(createUserParams)
+	user, err := types.NewUserFromParams(createUserParams, false)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	_, err = h.store.User.CreateUser(ctx.Context(), user)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return ctx.Status(fiber.StatusCreated).JSON(user)
+}
+
+func (h *UserHandler) HandlePostCreateAdminUserv1(ctx *fiber.Ctx) error {
+	createUserParams := types.CreateUserParams{}
+	err := ctx.BodyParser(&createUserParams)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	errors := createUserParams.Validate()
+	if len(errors) > 0 {
+		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"errors": errors})
+	}
+
+	user, err := types.NewUserFromParams(createUserParams, true)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}

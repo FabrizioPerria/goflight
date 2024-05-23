@@ -20,14 +20,15 @@ X-Api-Token: {{token}}
     "airline": "Delta",
     "departure": "JFK",
     "arrival": "LAX",
-    "departure_time": "2021-12-12T12:00:00Z",
-    "arrival_time": "2021-12-12T14:00:00Z",
+    "departure_time": "2025-12-12T12:00:00Z",
+    "arrival_time": "2025-12-12T14:00:00Z",
     "number_of_seats": 100
 }
 --{%
 local body = context.json_decode(context.result.body)
 context.set_env("flightId", body.id)
 context.set_env("firstSeat", body.seats[1])
+context.set_env("secondSeat", body.seats[2])
 --%}
 # :vim.env.flightId
 
@@ -42,10 +43,12 @@ GET {{URL}}/flights/{{flightId}}/seats
 X-Api-Token: {{token}}
 
 ###
-GET {{URL}}/flights/{{flightId}}/seats/{{firstSeat}}
+# GET {{URL}}/flights/{{flightId}}/seats/{{firstSeat}}
+GET {{URL}}/flights/{{flightId}}/seats/{{secondSeat}}
 X-Api-Token: {{token}}
 
 ###
+# POST {{URL}}/flights/{{flightId}}/seats/{{secondSeat}}/reservations
 POST {{URL}}/flights/{{flightId}}/seats/{{firstSeat}}/reservations
 X-Api-Token: {{token}}
 

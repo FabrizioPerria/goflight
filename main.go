@@ -40,36 +40,43 @@ func main() {
 	var (
 		userStore        = db.NewMongoDbUserStore(client)
 		flightStore      = db.NewMongoDbFlightStore(client)
-		reservationStore = db.NewMongoDbReservationStore(client)
-		seatStore        = db.NewMongoDbSeatStore(client, *flightStore, *reservationStore)
+		seatStore        = db.NewMongoDbSeatStore(client, *flightStore)
+		reservationStore = db.NewMongoDbReservationStore(client, *flightStore, *seatStore)
 
 		mainStore = db.Store{User: userStore, Flight: flightStore, Seat: seatStore, Reservation: reservationStore}
 
-		userHandler   = handlers.NewUserHandler(mainStore)
-		flightHandler = handlers.NewFlightHandler(mainStore)
-		authHandler   = handlers.NewAuthHandler(mainStore)
+		userHandler        = handlers.NewUserHandler(mainStore)
+		flightHandler      = handlers.NewFlightHandler(mainStore)
+		authHandler        = handlers.NewAuthHandler(mainStore)
+		reservationHandler = handlers.NewReservationHandler(mainStore)
 
-		app   = fiber.New(config)
-		auth  = app.Group("/api")
-		apiv1 = app.Group("/api/v1/", middleware.JWTAuthentication(userStore))
+		app     = fiber.New(config)
+		notAuth = app.Group("/api")
+		apiv1   = app.Group("/api/v1/", middleware.JWTAuthentication(userStore))
+		admin   = apiv1.Group("/admin", middleware.AdminOnly())
 	)
-	auth.Post("/auth", authHandler.HandleAuthenticate)
+	notAuth.Post("/auth", authHandler.HandleAuthenticate)
+	notAuth.Post("/v1/users", userHandler.HandlePostCreateUserv1)
 
-	apiv1.Post("/users", userHandler.HandlePostCreateUserv1)
-	apiv1.Delete("/users", userHandler.HandleDeleteAllUsersv1)
-	apiv1.Get("/users", userHandler.HandleGetUsersv1)
+	admin.Post("/users", userHandler.HandlePostCreateAdminUserv1)
+	admin.Delete("/users", userHandler.HandleDeleteAllUsersv1)
+	admin.Get("/users", userHandler.HandleGetUsersv1)
 	apiv1.Delete("/users/:uid", userHandler.HandleDeleteUserv1)
 	apiv1.Get("/users/:uid", userHandler.HandleGetUserv1)
 	apiv1.Put("/users/:uid", userHandler.HandlePutUserv1)
 
 	apiv1.Get("/flights", flightHandler.HandleGetFlightsv1)
 	apiv1.Post("/flights", flightHandler.HandlePostCreateFlightv1)
-	apiv1.Delete("/flights", flightHandler.HandleDeleteAllFlightsv1)
 	apiv1.Get("/flights/:fid", flightHandler.HandleGetFlightv1)
 	apiv1.Get("/flights/:fid/seats", flightHandler.HandleGetSeatsv1)
 	apiv1.Get("/flights/:fid/seats/:sid", flightHandler.HandleGetSeatv1)
 
-	apiv1.Post("/flights/:fid/seats/:sid/reservations", flightHandler.HandlePostCreateReservationv1)
+	apiv1.Post("/flights/:fid/seats/:sid/reservations", reservationHandler.HandlePostCreateReservationv1)
+
+	admin.Get("/reservations", reservationHandler.HandleGetReservationsv1)
+
+	apiv1.Get("/reservations/:rid", reservationHandler.HandleGetReservationv1)
+	apiv1.Delete("/reservations/:rid", reservationHandler.HandleDeleteReservationv1)
 
 	app.Listen(*listenAddress)
 }

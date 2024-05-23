@@ -34,7 +34,20 @@ func SeedUsers(client *mongo.Client) {
 		FirstName:     "Dude",
 		LastName:      "Dudely",
 	}
-	user, err := types.NewUserFromParams(userParams)
+	user, err := types.NewUserFromParams(userParams, true)
+	if err != nil {
+		fmt.Println(err)
+	}
+	userDb.CreateUser(context.Background(), user)
+	users = append(users, *user)
+	userParams = types.CreateUserParams{
+		Email:         "nonadmin@a.b",
+		PlainPassword: "password",
+		Phone:         "1234567890",
+		FirstName:     "Dude",
+		LastName:      "Dudely",
+	}
+	user, err = types.NewUserFromParams(userParams, false)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -49,7 +62,7 @@ func SeedUsers(client *mongo.Client) {
 			FirstName:     gofakeit.FirstName(),
 			LastName:      gofakeit.LastName(),
 		}
-		user, err := types.NewUserFromParams(userParams)
+		user, err := types.NewUserFromParams(userParams, false)
 		if err != nil {
 			fmt.Println(err)
 			continue

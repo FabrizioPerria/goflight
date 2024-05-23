@@ -1,8 +1,6 @@
 package types
 
 import (
-	"time"
-
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -20,8 +18,7 @@ type CreateReservationParams struct {
 
 func ReservationFromParams(params *CreateReservationParams) *Reservation {
 	return &Reservation{
-		SeatId:          params.SeatId,
-		UserId:          params.UserId,
-		ReservationDate: time.Now().Format(time.RFC3339),
+		SeatId: params.SeatId,
+		UserId: params.UserId,
 	}
 }

@@ -1,0 +1,34 @@
+POST {{BASE_URL}}/auth
+Content-Type: application/json
+
+{
+    "email": "a.b@c.d",
+    "password": "password"
+}
+
+--{%
+local body = context.json_decode(context.result.body)
+context.set_env("token", body.token)
+context.set_env("user_id", body.user.id)
+--%}
+
+###
+
+GET {{URL}}/admin/reservations
+X-Api-Token: {{token}}
+
+--{%
+local body = context.json_decode(context.result.body)
+for i, reservation in ipairs(body) do
+    if reservation.user_id == user_id then
+        context.set_env("reservation_id", reservation.id)
+        break
+    end
+end
+--%}
+
+###
+
+GET {{URL}}/reservations/{{reservation_id}}
+X-Api-Token: {{token}}
+

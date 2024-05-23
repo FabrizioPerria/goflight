@@ -28,6 +28,7 @@ type User struct {
 	Phone             string             `json:"phone" bson:"phone"`
 	EncryptedPassword string             `json:"-" bson:"encrypted_password"`
 	Id                primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	IsAdmin           bool               `json:"is_admin" bson:"is_admin"`
 }
 
 const (
@@ -59,7 +60,7 @@ func (params CreateUserParams) Validate() map[string]string {
 		errors["password"] = fmt.Sprintf("password must be at least %d characters", minPasswordLength)
 	}
 	if !isValidEmail(params.Email) {
-		errors["email"] = "email is not valid"
+		errors["email"] = fmt.Sprintf("email %s is not valid", params.Email)
 	}
 
 	return errors
@@ -77,7 +78,7 @@ func (params UpdateUserParams) Validate() map[string]string {
 	return errors
 }
 
-func NewUserFromParams(params CreateUserParams) (*User, error) {
+func NewUserFromParams(params CreateUserParams, isAdmin bool) (*User, error) {
 	encrypted_password, err := bcrypt.GenerateFromPassword([]byte(params.PlainPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
@@ -88,5 +89,6 @@ func NewUserFromParams(params CreateUserParams) (*User, error) {
 		Email:             params.Email,
 		Phone:             params.Phone,
 		EncryptedPassword: string(encrypted_password),
+		IsAdmin:           isAdmin,
 	}, nil
 }
