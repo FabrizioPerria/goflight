@@ -75,10 +75,10 @@ func SeedUsers(client *mongo.Client) {
 func SeedFlights(client *mongo.Client) {
 	flightDb := db.NewMongoDbFlightStore(client)
 	flightDb.Drop(context.Background())
-	reservationDb := db.NewMongoDbReservationStore(client)
-	reservationDb.Drop(context.Background())
-	seatDb := db.NewMongoDbSeatStore(client, *flightDb, *reservationDb)
+	seatDb := db.NewMongoDbSeatStore(client, *flightDb)
 	seatDb.Drop(context.Background())
+	reservationDb := db.NewMongoDbReservationStore(client, *flightDb, *seatDb)
+	reservationDb.Drop(context.Background())
 
 	fmt.Println("Seeding flights")
 	for i := 0; i < 10; i++ {
@@ -139,19 +139,25 @@ func SeedFlights(client *mongo.Client) {
 }
 
 func SeedReservations(client *mongo.Client) {
-	reservationDb := db.NewMongoDbReservationStore(client)
+	flightDb := db.NewMongoDbFlightStore(client)
+	seatDb := db.NewMongoDbSeatStore(client, *flightDb)
+	reservationDb := db.NewMongoDbReservationStore(client, *flightDb, *seatDb)
 	reservationDb.Drop(context.Background())
+
+	flight := flights[0]
+	seat := flight.Seats[0]
+	user := users[1]
+	_, err := reservationDb.CreateReservation(context.Background(), bson.M{"_id": seat}, user.Id)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	fmt.Println("Seeding reservations")
 	for i := 0; i < 10; i++ {
 		flight := flights[gofakeit.Number(0, len(flights)-1)]
 		seat := flight.Seats[gofakeit.Number(0, len(flight.Seats)-1)]
 		user := users[gofakeit.Number(0, len(users)-1)]
-		reservation := &types.Reservation{
-			UserId: user.Id,
-			SeatId: seat,
-		}
-		_, err := reservationDb.CreateReservation(context.Background(), reservation)
+		_, err := reservationDb.CreateReservation(context.Background(), bson.M{"_id": seat}, user.Id)
 		if err != nil {
 			fmt.Println(err)
 			continue

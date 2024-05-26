@@ -61,19 +61,21 @@ func main() {
 	admin.Post("/users", userHandler.HandlePostCreateAdminUserv1)
 	admin.Delete("/users", userHandler.HandleDeleteAllUsersv1)
 	admin.Get("/users", userHandler.HandleGetUsersv1)
+	admin.Post("/flights", flightHandler.HandlePostCreateFlightv1)
+	admin.Get("/reservations", reservationHandler.HandleGetAllReservationsv1)
+
 	apiv1.Delete("/users/:uid", userHandler.HandleDeleteUserv1)
 	apiv1.Get("/users/:uid", userHandler.HandleGetUserv1)
 	apiv1.Put("/users/:uid", userHandler.HandlePutUserv1)
 
 	apiv1.Get("/flights", flightHandler.HandleGetFlightsv1)
-	apiv1.Post("/flights", flightHandler.HandlePostCreateFlightv1)
 	apiv1.Get("/flights/:fid", flightHandler.HandleGetFlightv1)
 	apiv1.Get("/flights/:fid/seats", flightHandler.HandleGetSeatsv1)
 	apiv1.Get("/flights/:fid/seats/:sid", flightHandler.HandleGetSeatv1)
 
 	apiv1.Post("/flights/:fid/seats/:sid/reservations", reservationHandler.HandlePostCreateReservationv1)
 
-	admin.Get("/reservations", reservationHandler.HandleGetReservationsv1)
+	apiv1.Get("/reservations", reservationHandler.HandleGetMyReservationsv1)
 
 	apiv1.Get("/reservations/:rid", reservationHandler.HandleGetReservationv1)
 	apiv1.Delete("/reservations/:rid", reservationHandler.HandleDeleteReservationv1)

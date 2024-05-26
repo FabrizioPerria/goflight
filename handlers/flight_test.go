@@ -29,9 +29,9 @@ func setupFlightDb() (*testFlightDb, error) {
 		return nil, err
 	}
 	flightStore := db.NewMongoDbFlightStore(client)
-	reservationStore := db.NewMongoDbReservationStore(client)
-	seatStore := db.NewMongoDbSeatStore(client, *flightStore, *reservationStore)
-	store := db.Store{Flight: flightStore, Seat: seatStore}
+	seatStore := db.NewMongoDbSeatStore(client, *flightStore)
+	reservationStore := db.NewMongoDbReservationStore(client, *flightStore, *seatStore)
+	store := db.Store{Flight: flightStore, Seat: seatStore, Reservation: reservationStore}
 	return &testFlightDb{
 		Client: client,
 		Store:  store,

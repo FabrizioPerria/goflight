@@ -5,10 +5,11 @@ import (
 )
 
 type Reservation struct {
-	ReservationDate string             `json:"reservation_date,omitempty" bson:"reservation_date,omitempty"`
-	Id              primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
-	SeatId          primitive.ObjectID `json:"seat_id,omitempty" bson:"seat_id,omitempty"`
-	UserId          primitive.ObjectID `json:"user_id,omitempty" bson:"user_id,omitempty"`
+	ReservationDate  string             `json:"reservation_date,omitempty" bson:"reservation_date,omitempty"`
+	CancellationDate string             `json:"cancellation_date,omitempty" bson:"cancellation_date,omitempty"`
+	Id               primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	SeatId           primitive.ObjectID `json:"seat_id,omitempty" bson:"seat_id,omitempty"`
+	UserId           primitive.ObjectID `json:"user_id,omitempty" bson:"user_id,omitempty"`
 }
 
 type CreateReservationParams struct {

@@ -17,7 +17,7 @@ import (
 
 type ReservationStorer interface {
 	CreateReservation(ctx context.Context, filter bson.M, userId primitive.ObjectID) (*types.Reservation, error)
-	GetReservations(ctx context.Context) ([]*types.Reservation, error)
+	GetReservations(ctx context.Context, filter bson.M) ([]*types.Reservation, error)
 	GetReservation(ctx context.Context, filter bson.M) (*types.Reservation, error)
 	DeleteReservation(ctx context.Context, filter bson.M) error
 	Dropper
@@ -82,6 +82,7 @@ func (db *MongoDbReservationStore) CreateReservation(ctx context.Context, filter
 		reservation := types.ReservationFromParams(&reservationParams)
 
 		reservation.ReservationDate = time.Now().Format(time.RFC3339)
+		reservation.CancellationDate = ""
 		result, err := db.collection.InsertOne(ctx, reservation)
 		if err != nil {
 			return nil, err
@@ -91,17 +92,21 @@ func (db *MongoDbReservationStore) CreateReservation(ctx context.Context, filter
 		return reservation.Id, nil
 	}
 
-	reservation, err := session.WithTransaction(ctx, callback, txnOpts)
+	reservationId, err := session.WithTransaction(ctx, callback, txnOpts)
+	if err != nil {
+		return nil, err
+	}
+	reservation, err := db.GetReservation(ctx, bson.M{"_id": reservationId.(primitive.ObjectID)})
 	if err != nil {
 		return nil, err
 	}
 
-	return reservation.(*types.Reservation), nil
+	return reservation, nil
 }
 
-func (db *MongoDbReservationStore) GetReservations(ctx context.Context) ([]*types.Reservation, error) {
+func (db *MongoDbReservationStore) GetReservations(ctx context.Context, filter bson.M) ([]*types.Reservation, error) {
 	var reservations []*types.Reservation
-	cursor, err := db.collection.Find(ctx, bson.M{})
+	cursor, err := db.collection.Find(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -138,6 +143,10 @@ func (db *MongoDbReservationStore) DeleteReservation(ctx context.Context, filter
 			return nil, err
 		}
 
+		if reservation.CancellationDate != "" {
+			return nil, fmt.Errorf("reservation already cancelled")
+		}
+
 		seatFilter := bson.M{"_id": reservation.SeatId}
 		seat, err := db.seatStore.GetSeat(ctx, seatFilter)
 		if err != nil {
@@ -148,16 +157,18 @@ func (db *MongoDbReservationStore) DeleteReservation(ctx context.Context, filter
 			return nil, err
 		}
 
-		filter = bson.M{"_id": seat.FlightId}
+		flightFilter := bson.M{"_id": seat.FlightId}
 		update := bson.M{"$push": bson.M{"seats": seat.Id}}
-		_, err = db.flightStore.collection.UpdateOne(sessionContext, filter, update)
+		_, err = db.flightStore.collection.UpdateOne(sessionContext, flightFilter, update)
 		if err != nil {
 			return nil, err
 		}
 
-		result, err := db.collection.DeleteOne(ctx, filter)
-
-		return result.DeletedCount, err
+		result, err := db.collection.UpdateOne(ctx, filter, bson.M{"$set": bson.M{"cancellation_date": time.Now().Format(time.RFC3339)}})
+		if err != nil {
+			return nil, err
+		}
+		return result.UpsertedID, nil
 	}
 	_, err = session.WithTransaction(ctx, callback, txnOpts)
 	return err

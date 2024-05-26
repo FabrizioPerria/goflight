@@ -64,14 +64,24 @@ func (h *ReservationHandler) HandlePostCreateReservationv1(ctx *fiber.Ctx) error
 	return ctx.Status(fiber.StatusCreated).JSON(reservation)
 }
 
-func (h *ReservationHandler) HandleGetReservationsv1(ctx *fiber.Ctx) error {
-	reservations, err := h.store.Reservation.GetReservations(ctx.Context())
+func (h *ReservationHandler) HandleGetAllReservationsv1(ctx *fiber.Ctx) error {
+	reservations, err := h.store.Reservation.GetReservations(ctx.Context(), bson.M{})
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 	user := ctx.Context().UserValue("user").(*types.User)
 	if !user.IsAdmin {
 		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	return ctx.JSON(reservations)
+}
+
+func (h *ReservationHandler) HandleGetMyReservationsv1(ctx *fiber.Ctx) error {
+	user := ctx.Context().UserValue("user").(*types.User)
+	reservations, err := h.store.Reservation.GetReservations(ctx.Context(), bson.M{"user_id": user.Id})
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	return ctx.JSON(reservations)
