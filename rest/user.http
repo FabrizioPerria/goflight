@@ -13,9 +13,8 @@ context.set_env("token", body.token)
 
 ###
 
-POST {{URL}}/users
+POST {{BASE_URL}}/users
 Content-Type: application/json
-X-Api-Token: {{token}}
 
 {
     "first_name": "John",

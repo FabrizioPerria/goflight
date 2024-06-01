@@ -8,9 +8,9 @@ import (
 
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/fabrizioperria/goflight/db"
+	"github.com/fabrizioperria/goflight/db/fixtures"
 	"github.com/fabrizioperria/goflight/types"
 	"github.com/govalues/money"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -22,146 +22,84 @@ var (
 	reservations = []types.Reservation{}
 )
 
-func SeedUsers(client *mongo.Client) {
-	userDb := db.NewMongoDbUserStore(client)
-	userDb.Drop(context.Background())
+func SeedUsers(client *mongo.Client, store *db.Store) {
+	store.User.Drop(context.Background())
 
 	fmt.Println("Seeding users")
-	userParams := types.CreateUserParams{
-		Email:         "a.b@c.d",
-		PlainPassword: "password",
-		Phone:         "1234567890",
-		FirstName:     "Dude",
-		LastName:      "Dudely",
-	}
-	user, err := types.NewUserFromParams(userParams, true)
-	if err != nil {
-		fmt.Println(err)
-	}
-	userDb.CreateUser(context.Background(), user)
+	user, _ := fixtures.AddUser(store, "admin@a.b", "password", "1234567890", "Dude", "Dudely", true)
 	users = append(users, *user)
-	userParams = types.CreateUserParams{
-		Email:         "nonadmin@a.b",
-		PlainPassword: "password",
-		Phone:         "1234567890",
-		FirstName:     "Dude",
-		LastName:      "Dudely",
-	}
-	user, err = types.NewUserFromParams(userParams, false)
-	if err != nil {
-		fmt.Println(err)
-	}
-	userDb.CreateUser(context.Background(), user)
+	user, _ = fixtures.AddUser(store, "nonadmin@a.b", "password", "1234567890", "Dude", "Dudely", false)
 	users = append(users, *user)
 
 	for i := 0; i < 10; i++ {
-		userParams := types.CreateUserParams{
-			Email:         gofakeit.Email(),
-			PlainPassword: gofakeit.Password(true, true, true, true, false, 10),
-			Phone:         gofakeit.Phone(),
-			FirstName:     gofakeit.FirstName(),
-			LastName:      gofakeit.LastName(),
-		}
-		user, err := types.NewUserFromParams(userParams, false)
+		user, err := fixtures.AddUser(store,
+			gofakeit.Email(),
+			gofakeit.Password(true, true, true, true, false, 10),
+			gofakeit.Phone(),
+			gofakeit.FirstName(),
+			gofakeit.LastName(),
+			false)
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
-		userDb.CreateUser(context.Background(), user)
+
 		users = append(users, *user)
 	}
 }
 
-func SeedFlights(client *mongo.Client) {
-	flightDb := db.NewMongoDbFlightStore(client)
-	flightDb.Drop(context.Background())
-	seatDb := db.NewMongoDbSeatStore(client, *flightDb)
-	seatDb.Drop(context.Background())
-	reservationDb := db.NewMongoDbReservationStore(client, *flightDb, *seatDb)
-	reservationDb.Drop(context.Background())
+func SeedFlights(client *mongo.Client, store *db.Store) {
+	store.Flight.Drop(context.Background())
+	store.Seat.Drop(context.Background())
+	store.Reservation.Drop(context.Background())
 
 	fmt.Println("Seeding flights")
 	for i := 0; i < 10; i++ {
 
-		flightParams := types.CreateFlightParams{
-			Airline:       gofakeit.Company(),
-			Departure:     gofakeit.City(),
-			Arrival:       gofakeit.City(),
-			DepartureTime: gofakeit.Date().Format(time.RFC3339),
-			ArrivalTime:   gofakeit.Date().Format(time.RFC3339),
-			NumberOfSeats: gofakeit.Number(10, 100),
-		}
-		flight, err := types.NewFlightFromParams(flightParams)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-		newflight, err := flightDb.CreateFlight(context.Background(), flight)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-		updateData := types.UpdateFlightParams{
-			Seats:         []primitive.ObjectID{},
-			ArrivalTime:   newflight.ArrivalTime,
-			DepartureTime: newflight.DepartureTime,
-		}
-		for j := 0; j < flightParams.NumberOfSeats; j++ {
+		numberSeats := gofakeit.Number(1, 100)
+		newflight, _ := fixtures.AddFlight(store,
+			gofakeit.Company(),
+			gofakeit.City(),
+			gofakeit.City(),
+			time.Now().AddDate(0, 0, gofakeit.Number(1, 30)).Format(time.RFC3339),
+			time.Now().AddDate(0, 0, gofakeit.Number(31, 60)).Format(time.RFC3339),
+			numberSeats)
+
+		newSeats := []primitive.ObjectID{}
+		for j := 0; j < numberSeats; j++ {
 			price, _ := money.NewAmountFromFloat64("USD", gofakeit.Float64Range(10, 1000))
-			price = price.Round(2)
-			priceFloat, _ := price.Float64()
-
-			seat := types.Seat{
-				Price:     priceFloat,
-				Number:    j,
-				Class:     types.SeatClass(gofakeit.Number(1, 3)),
-				Location:  types.SeatLocation(gofakeit.Number(1, 3)),
-				Available: true,
-				FlightId:  newflight.Id,
-			}
-			registeredSeat, err := seatDb.CreateSeat(context.Background(), &seat)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			updateData.Seats = append(updateData.Seats, registeredSeat.Id)
+			seat, _ := fixtures.AddSeat(store,
+				price,
+				j,
+				types.SeatClass(gofakeit.Number(0, 2)),
+				types.SeatLocation(gofakeit.Number(0, 2)),
+				true,
+				newflight.Id)
+			newSeats = append(newSeats, seat.Id)
 		}
-
-		filter := bson.M{"_id": newflight.Id}
-		_, err = flightDb.UpdateFlight(context.Background(), filter, updateData)
+		err := fixtures.AddSeatsToFlight(store, newflight.Id, newSeats)
 		if err != nil {
 			fmt.Println(err)
+			// should delete the flight, but oh well
 			continue
 		}
-		newflight.Seats = updateData.Seats
+		newflight.Seats = newSeats
+
 		flights = append(flights, *newflight)
 	}
 }
 
-func SeedReservations(client *mongo.Client) {
-	flightDb := db.NewMongoDbFlightStore(client)
-	seatDb := db.NewMongoDbSeatStore(client, *flightDb)
-	reservationDb := db.NewMongoDbReservationStore(client, *flightDb, *seatDb)
-	reservationDb.Drop(context.Background())
+func SeedReservations(client *mongo.Client, store *db.Store) {
+	store.Reservation.Drop(context.Background())
 
-	flight := flights[0]
-	seat := flight.Seats[0]
-	user := users[1]
-	_, err := reservationDb.CreateReservation(context.Background(), bson.M{"_id": seat}, user.Id)
-	if err != nil {
-		fmt.Println(err)
-	}
+	fixtures.AddReservation(store, flights[0].Seats[0], users[1].Id)
 
 	fmt.Println("Seeding reservations")
 	for i := 0; i < 10; i++ {
 		flight := flights[gofakeit.Number(0, len(flights)-1)]
 		seat := flight.Seats[gofakeit.Number(0, len(flight.Seats)-1)]
 		user := users[gofakeit.Number(0, len(users)-1)]
-		_, err := reservationDb.CreateReservation(context.Background(), bson.M{"_id": seat}, user.Id)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
+		fixtures.AddReservation(store, seat, user.Id)
 	}
 }
 
@@ -175,7 +113,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	SeedUsers(client)
-	SeedFlights(client)
-	SeedReservations(client)
+	userDb := db.NewMongoDbUserStore(client)
+	flightDb := db.NewMongoDbFlightStore(client)
+	seatDb := db.NewMongoDbSeatStore(client, *flightDb)
+	reservationDb := db.NewMongoDbReservationStore(client, *flightDb, *seatDb)
+
+	store := db.NewStore(userDb, flightDb, seatDb, reservationDb)
+	SeedUsers(client, store)
+	SeedFlights(client, store)
+	SeedReservations(client, store)
 }

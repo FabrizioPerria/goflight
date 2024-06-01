@@ -94,7 +94,7 @@ func (h *ReservationHandler) authenticateUser(ctx *fiber.Ctx, filter bson.M) err
 	}
 
 	user := ctx.Context().UserValue("user").(*types.User)
-	if reservation.UserId != user.Id {
+	if reservation.UserId != user.Id && !user.IsAdmin {
 		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
 	return nil

@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/brianvoe/gofakeit/v7"
 	"github.com/fabrizioperria/goflight/db"
+	"github.com/fabrizioperria/goflight/db/fixtures"
 	"github.com/fabrizioperria/goflight/types"
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
@@ -33,6 +36,7 @@ func setupUsersDb() (*testUserDb, error) {
 		return nil, err
 	}
 	userStore := db.NewMongoDbUserStore(client)
+	userStore.Drop(context.Background())
 	mainStore := db.Store{User: userStore}
 	return &testUserDb{Store: mainStore, Client: client}, nil
 }
@@ -46,16 +50,6 @@ func teardownUsersDb(t *testing.T, db *testUserDb) {
 	}
 }
 
-func getValidUser() types.CreateUserParams {
-	return types.CreateUserParams{
-		FirstName:     "Frank",
-		LastName:      "Potato",
-		Email:         "fp@test.com",
-		Phone:         "123456789",
-		PlainPassword: "password",
-	}
-}
-
 func getInvalidUser() types.CreateUserParams {
 	return types.CreateUserParams{
 		FirstName:     "F",
@@ -66,23 +60,22 @@ func getInvalidUser() types.CreateUserParams {
 	}
 }
 
-func createUser(userHandler *UserHandler, app *fiber.App, user types.CreateUserParams) (*http.Response, error) {
-	app.Post("/api/v1/users", userHandler.HandlePostCreateUserv1)
+func createUser(app *fiber.App, user types.CreateUserParams) (*http.Response, error) {
 	marshalUser, err := json.Marshal(user)
 	if err != nil {
 		return nil, err
 	}
 
-	req := httptest.NewRequest("POST", "/api/v1/users", bytes.NewReader(marshalUser))
+	req := httptest.NewRequest("POST", "/api/users", bytes.NewReader(marshalUser))
 	req.Header.Add("Content-Type", "application/json")
 	return app.Test(req)
 }
 
-func getUsers(userHandler *UserHandler, app *fiber.App) (*http.Response, error) {
-	app.Get("/api/v1/users", userHandler.HandleGetUsersv1)
-
-	req := httptest.NewRequest("GET", "/api/v1/users", nil)
-	req.Header.Add("Content-Type", "application/json")
+func getUsers(app *fiber.App, headers map[string]string) (*http.Response, error) {
+	req := httptest.NewRequest("GET", "/api/v1/admin/users", nil)
+	for key, value := range headers {
+		req.Header.Add(key, value)
+	}
 	return app.Test(req)
 }
 
@@ -90,12 +83,18 @@ func TestPostCreateValidUser(t *testing.T) {
 	db, err := setupUsersDb()
 	assert.NoError(t, err)
 	defer teardownUsersDb(t, db)
-	userHandler := UserHandler{store: db.Store}
 
-	app := fiber.New()
+	app := SetupRoutes(db.Store, fiber.Config{})
 
-	user := getValidUser()
-	response, error := createUser(&userHandler, app, user)
+	user := types.CreateUserParams{
+		FirstName:     "Frank",
+		LastName:      "Potato",
+		Email:         "fp@test.com",
+		Phone:         "123456789",
+		PlainPassword: "password",
+	}
+
+	response, error := createUser(app, user)
 	assert.NoError(t, error)
 	assert.Equal(t, 201, response.StatusCode)
 
@@ -116,12 +115,11 @@ func TestPostCreateInvalidUser(t *testing.T) {
 	db, err := setupUsersDb()
 	assert.NoError(t, err)
 	defer teardownUsersDb(t, db)
-	userHandler := UserHandler{store: db.Store}
 
-	app := fiber.New()
+	app := SetupRoutes(db.Store, fiber.Config{})
 
 	user := getInvalidUser()
-	response, err := createUser(&userHandler, app, user)
+	response, err := createUser(app, user)
 	assert.NoError(t, err)
 	assert.Equal(t, 400, response.StatusCode)
 
@@ -139,44 +137,39 @@ func TestPostCreateInvalidUser(t *testing.T) {
 
 	assert.Equal(t, "first name must be at least 3 characters", errors["first_name"])
 	assert.Equal(t, "last name must be at least 3 characters", errors["last_name"])
-	assert.Equal(t, "email is not valid", errors["email"])
+	expected := fmt.Sprintf("email %s is not valid", user.Email)
+	assert.Equal(t, expected, errors["email"])
 }
 
-func TestGetUsersEmpty(t *testing.T) {
+func TestGetUsersIfUnauthenticated(t *testing.T) {
 	db, err := setupUsersDb()
 	assert.NoError(t, err)
 	defer teardownUsersDb(t, db)
-	userHandler := UserHandler{store: db.Store}
 
-	app := fiber.New()
+	app := SetupRoutes(db.Store, fiber.Config{})
 
-	response, err := getUsers(&userHandler, app)
+	headers := map[string]string{
+		"Content-Type": "application/json",
+	}
+	response, err := getUsers(app, headers)
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusOK, response.StatusCode)
-
-	body, err := io.ReadAll(io.Reader(response.Body))
-	assert.NoError(t, err)
-
-	bodyT := []types.User{}
-	err = json.Unmarshal(body, &bodyT)
-	assert.NoError(t, err)
-	assert.Equal(t, 0, len(bodyT))
+	assert.Equal(t, fiber.StatusUnauthorized, response.StatusCode)
 }
 
 func TestGetUsersNotEmpty(t *testing.T) {
 	db, err := setupUsersDb()
 	assert.NoError(t, err)
 	defer teardownUsersDb(t, db)
-	userHandler := UserHandler{store: db.Store}
 
-	app := fiber.New()
+	app := SetupRoutes(db.Store, fiber.Config{})
 
-	user := getValidUser()
-	response, err := createUser(&userHandler, app, user)
-	assert.NoError(t, err)
-	assert.Equal(t, 201, response.StatusCode)
+	user, token := fixtures.AuthenticateUser(&db.Store)
 
-	response, err = getUsers(&userHandler, app)
+	headers := map[string]string{
+		"X-Api-Token":  token,
+		"Content-Type": "application/json",
+	}
+	response, err := getUsers(app, headers)
 	assert.NoError(t, err)
 	body, err := io.ReadAll(io.Reader(response.Body))
 	assert.NoError(t, err)
@@ -199,33 +192,22 @@ func TestGetUserById(t *testing.T) {
 	db, err := setupUsersDb()
 	assert.NoError(t, err)
 	defer teardownUsersDb(t, db)
-	userHandler := UserHandler{store: db.Store}
 
-	app := fiber.New()
+	app := SetupRoutes(db.Store, fiber.Config{})
 
-	user := getValidUser()
-	response, err := createUser(&userHandler, app, user)
+	user, token := fixtures.AuthenticateUser(&db.Store)
+
+	id := user.Id.Hex()
+	req := httptest.NewRequest("GET", "/api/v1/users/"+id, nil)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("X-Api-Token", token)
+	response, err := app.Test(req)
 	assert.NoError(t, err)
-	assert.Equal(t, 201, response.StatusCode)
+	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 
 	body, err := io.ReadAll(io.Reader(response.Body))
 	assert.NoError(t, err)
 	bodyT := types.User{}
-	err = json.Unmarshal(body, &bodyT)
-	assert.NoError(t, err)
-
-	id := bodyT.Id.Hex()
-
-	req := httptest.NewRequest("GET", "/api/v1/users/"+id, nil)
-	req.Header.Add("Content-Type", "application/json")
-	app.Get("/api/v1/users/:uid", userHandler.HandleGetUserv1)
-	response, err = app.Test(req)
-	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusOK, response.StatusCode)
-
-	body, err = io.ReadAll(io.Reader(response.Body))
-	assert.NoError(t, err)
-	bodyT = types.User{}
 	err = json.Unmarshal(body, &bodyT)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, bodyT.Id)
@@ -242,10 +224,12 @@ func TestGetUserByIdNotFound(t *testing.T) {
 	defer teardownUsersDb(t, db)
 	store := UserHandler{store: db.Store}
 
-	app := fiber.New()
+	app := SetupRoutes(db.Store, fiber.Config{})
+	_, token := fixtures.AuthenticateUser(&db.Store)
 
 	req := httptest.NewRequest("GET", "/api/v1/users/16624e25e22069075acbb235", nil)
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("X-Api-Token", token)
 	app.Get("/api/v1/users/:uid", store.HandleGetUserv1)
 	response, err := app.Test(req)
 	assert.NoError(t, err)
@@ -256,32 +240,29 @@ func TestDeleteUserById(t *testing.T) {
 	db, err := setupUsersDb()
 	assert.NoError(t, err)
 	defer teardownUsersDb(t, db)
-	userHandler := UserHandler{store: db.Store}
 
-	app := fiber.New()
+	app := SetupRoutes(db.Store, fiber.Config{})
 
-	user := getValidUser()
-	response, err := createUser(&userHandler, app, user)
-	assert.NoError(t, err)
-	assert.Equal(t, 201, response.StatusCode)
+	user, token := fixtures.AuthenticateUser(&db.Store)
 
-	body, err := io.ReadAll(io.Reader(response.Body))
-	assert.NoError(t, err)
-	bodyT := types.User{}
-	err = json.Unmarshal(body, &bodyT)
-	assert.NoError(t, err)
-
-	id := bodyT.Id.Hex()
+	id := user.Id.Hex()
 	req := httptest.NewRequest("DELETE", "/api/v1/users/"+id, nil)
 	req.Header.Add("Content-Type", "application/json")
-	app.Delete("/api/v1/users/:uid", userHandler.HandleDeleteUserv1)
-	response, err = app.Test(req)
+	req.Header.Add("X-Api-Token", token)
+	response, err := app.Test(req)
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 
-	body, err = io.ReadAll(io.Reader(response.Body))
+	body, err := io.ReadAll(io.Reader(response.Body))
 	assert.NoError(t, err)
 	assert.Equal(t, "User deleted: ", string(body))
+	headers := map[string]string{
+		"X-Api-Token":  token,
+		"Content-Type": "application/json",
+	}
+	response, err = getUsers(app, headers)
+	assert.NoError(t, err)
+	assert.Equal(t, fiber.StatusUnauthorized, response.StatusCode)
 }
 
 func TestDeleteUserByIdNotFound(t *testing.T) {
@@ -290,10 +271,12 @@ func TestDeleteUserByIdNotFound(t *testing.T) {
 	defer teardownUsersDb(t, db)
 	userHandler := UserHandler{store: db.Store}
 
-	app := fiber.New()
+	app := SetupRoutes(db.Store, fiber.Config{})
+	_, token := fixtures.AuthenticateUser(&db.Store)
 
 	req := httptest.NewRequest("DELETE", "/api/v1/users/16624e25e22069075acbb235", nil)
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("X-Api-Token", token)
 	app.Delete("/api/v1/users/:uid", userHandler.HandleDeleteUserv1)
 	response, err := app.Test(req)
 	assert.NoError(t, err)
@@ -304,16 +287,21 @@ func TestDeleteAllUsers(t *testing.T) {
 	db, err := setupUsersDb()
 	assert.NoError(t, err)
 	defer teardownUsersDb(t, db)
-	userHandler := UserHandler{store: db.Store}
 
-	app := fiber.New()
+	app := SetupRoutes(db.Store, fiber.Config{})
 
-	user := getValidUser()
-	response, err := createUser(&userHandler, app, user)
-	assert.NoError(t, err)
-	assert.Equal(t, 201, response.StatusCode)
+	_, token := fixtures.AuthenticateUser(&db.Store)
+	fixtures.AddUser(&db.Store, gofakeit.Email(), "whocares", gofakeit.Phone(), gofakeit.FirstName(), gofakeit.LastName(), false)
+	fixtures.AddUser(&db.Store, gofakeit.Email(), "whocares", gofakeit.Phone(), gofakeit.FirstName(), gofakeit.LastName(), false)
+	fixtures.AddUser(&db.Store, gofakeit.Email(), "whocares", gofakeit.Phone(), gofakeit.FirstName(), gofakeit.LastName(), false)
+	fixtures.AddUser(&db.Store, gofakeit.Email(), "whocares", gofakeit.Phone(), gofakeit.FirstName(), gofakeit.LastName(), false)
+	fixtures.AddUser(&db.Store, gofakeit.Email(), "whocares", gofakeit.Phone(), gofakeit.FirstName(), gofakeit.LastName(), false)
+	headers := map[string]string{
+		"X-Api-Token":  token,
+		"Content-Type": "application/json",
+	}
 
-	response, err = getUsers(&userHandler, app)
+	response, err := getUsers(app, headers)
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 
@@ -322,41 +310,18 @@ func TestDeleteAllUsers(t *testing.T) {
 	bodyT := []types.User{}
 	err = json.Unmarshal(body, &bodyT)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(bodyT))
+	assert.Equal(t, 6, len(bodyT))
 
-	req := httptest.NewRequest("DELETE", "/api/v1/user", nil)
+	req := httptest.NewRequest("DELETE", "/api/v1/admin/users", nil)
 	req.Header.Add("Content-Type", "application/json")
-	app.Delete("/api/v1/user", userHandler.HandleDeleteAllUsersv1)
+	req.Header.Add("X-Api-Token", token)
 	response, err = app.Test(req)
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 
-	response, err = getUsers(&userHandler, app)
+	response, err = getUsers(app, headers)
 	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusOK, response.StatusCode)
-
-	body, err = io.ReadAll(io.Reader(response.Body))
-	assert.NoError(t, err)
-	bodyT = []types.User{}
-	err = json.Unmarshal(body, &bodyT)
-	assert.NoError(t, err)
-	assert.Equal(t, 0, len(bodyT))
-}
-
-func TestDeleteAllUsersEmpty(t *testing.T) {
-	db, err := setupUsersDb()
-	assert.NoError(t, err)
-	defer teardownUsersDb(t, db)
-	userHandler := UserHandler{store: db.Store}
-
-	app := fiber.New()
-
-	req := httptest.NewRequest("DELETE", "/api/v1/user", nil)
-	req.Header.Add("Content-Type", "application/json")
-	app.Delete("/api/v1/user", userHandler.HandleDeleteAllUsersv1)
-	response, err := app.Test(req)
-	assert.NoError(t, err)
-	assert.Equal(t, fiber.StatusOK, response.StatusCode)
+	assert.Equal(t, fiber.StatusUnauthorized, response.StatusCode)
 }
 
 func TestPutUser(t *testing.T) {
@@ -365,19 +330,10 @@ func TestPutUser(t *testing.T) {
 	defer teardownUsersDb(t, db)
 	userHandler := UserHandler{store: db.Store}
 
-	app := fiber.New()
+	app := SetupRoutes(db.Store, fiber.Config{})
 
-	user := getValidUser()
-	response, err := createUser(&userHandler, app, user)
-	assert.NoError(t, err)
-	assert.Equal(t, 201, response.StatusCode)
-
-	body, err := io.ReadAll(io.Reader(response.Body))
-	assert.NoError(t, err)
-	bodyT := types.User{}
-	err = json.Unmarshal(body, &bodyT)
-	assert.NoError(t, err)
-	id := bodyT.Id.Hex()
+	user, token := fixtures.AuthenticateUser(&db.Store)
+	id := user.Id.Hex()
 
 	updateUser := types.UpdateUserParams{
 		FirstName: "NewName",
@@ -389,22 +345,24 @@ func TestPutUser(t *testing.T) {
 
 	req := httptest.NewRequest("PUT", "/api/v1/users/"+id, bytes.NewReader(marshalUser))
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("X-Api-Token", token)
 	app.Put("/api/v1/users/:uid", userHandler.HandlePutUserv1)
-	response, err = app.Test(req)
+	response, err := app.Test(req)
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 
 	req = httptest.NewRequest("GET", "/api/v1/users/"+id, nil)
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("X-Api-Token", token)
 	app.Get("/api/v1/users/:uid", userHandler.HandleGetUserv1)
 	response, err = app.Test(req)
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusOK, response.StatusCode)
 
-	body, err = io.ReadAll(io.Reader(response.Body))
+	body, err := io.ReadAll(io.Reader(response.Body))
 	assert.NoError(t, err)
 
-	bodyT = types.User{}
+	bodyT := types.User{}
 	err = json.Unmarshal(body, &bodyT)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, bodyT.Id)
@@ -421,7 +379,8 @@ func TestPutUserNotFound(t *testing.T) {
 	defer teardownUsersDb(t, db)
 	userHandler := UserHandler{store: db.Store}
 
-	app := fiber.New()
+	app := SetupRoutes(db.Store, fiber.Config{})
+	_, token := fixtures.AuthenticateUser(&db.Store)
 
 	updateUser := types.UpdateUserParams{
 		FirstName: "NewName",
@@ -433,6 +392,7 @@ func TestPutUserNotFound(t *testing.T) {
 
 	req := httptest.NewRequest("PUT", "/api/v1/users/16624e25e22069075acbb235", bytes.NewReader(marshalUser))
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("X-Api-Token", token)
 	app.Put("/api/v1/users/:uid", userHandler.HandlePutUserv1)
 	response, err := app.Test(req)
 	assert.NoError(t, err)

@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+
 	"github.com/fabrizioperria/goflight/db"
 	"github.com/fabrizioperria/goflight/types"
 	"github.com/gofiber/fiber/v2"
@@ -42,6 +44,7 @@ func (h *UserHandler) HandleGetUsersv1(ctx *fiber.Ctx) error {
 }
 
 func (h *UserHandler) HandlePostCreateUserv1(ctx *fiber.Ctx) error {
+	fmt.Println("HandlePostCreateUserv1")
 	createUserParams := types.CreateUserParams{}
 	err := ctx.BodyParser(&createUserParams)
 	if err != nil {
