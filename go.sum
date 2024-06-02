@@ -18,6 +18,8 @@ github.com/govalues/decimal v0.1.23 h1:LNR59gK2LW2kCjCNvV93g00vbwMpQN9+n4b6E1Y3w
 github.com/govalues/decimal v0.1.23/go.mod h1:irMp3+UfATz5dlLhUagswX2ATLhGDmo/Hoq2MP4/9gg=
 github.com/govalues/money v0.2.2 h1:Tc+nNmpDi+/tINs+4/OEhDfUXQWmoVQwViue4T5fZ+s=
 github.com/govalues/money v0.2.2/go.mod h1:77LSUZ3xJ0dyU1UIcAh8SzLOXbOYcFHBgO+8T4nHN1k=
+github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
+github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
 github.com/klauspost/compress v1.17.0 h1:Rnbp4K9EjcDuVuHtd0dgA4qNuv9yKDYKK1ulpJwgrqM=
 github.com/klauspost/compress v1.17.0/go.mod h1:ntbaceVETuRiXiv4DpjP66DpAtAGkEQskQzEyD//IeE=
 github.com/mattn/go-colorable v0.1.13 h1:fFA4WZxdEF4tXPZVKMLwD8oUnCTTo08duU7wxecdEvA=

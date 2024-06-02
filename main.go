@@ -2,18 +2,16 @@ package main
 
 import (
 	"context"
-	"flag"
 	"log"
+	"os"
+
+	_ "github.com/joho/godotenv/autoload"
 
 	"github.com/fabrizioperria/goflight/db"
 	"github.com/fabrizioperria/goflight/handlers"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-)
-
-const (
-	uri = "mongodb://localhost:27017"
 )
 
 var config = fiber.Config{
@@ -23,10 +21,8 @@ var config = fiber.Config{
 }
 
 func main() {
-	listenAddress := flag.String("listen", ":5001", "The address to listen on for HTTP requests.")
-	flag.Parse()
-
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
+	mongoUrl := os.Getenv("MONGO_URL")
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoUrl))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -45,5 +41,6 @@ func main() {
 		mainStore = db.Store{User: userStore, Flight: flightStore, Seat: seatStore, Reservation: reservationStore}
 	)
 	app := handlers.SetupRoutes(mainStore, config)
-	app.Listen(*listenAddress)
+	listenAddress := os.Getenv("HTTP_LISTEN_ADDR")
+	app.Listen(listenAddress)
 }

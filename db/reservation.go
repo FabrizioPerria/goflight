@@ -34,9 +34,10 @@ const (
 )
 
 func NewMongoDbReservationStore(client *mongo.Client, flightStore MongoDbFlightStore, seatStore MongoDbSeatStore) *MongoDbReservationStore {
+	dbName := os.Getenv("DB_NAME")
 	return &MongoDbReservationStore{
 		client:      client,
-		collection:  client.Database(DBNAME).Collection(reservationCollection),
+		collection:  client.Database(dbName).Collection(reservationCollection),
 		flightStore: flightStore,
 		seatStore:   seatStore,
 	}

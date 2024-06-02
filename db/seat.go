@@ -27,9 +27,10 @@ type MongoDbSeatStore struct {
 }
 
 func NewMongoDbSeatStore(client *mongo.Client, flightStore MongoDbFlightStore) *MongoDbSeatStore {
+	dbName := os.Getenv("DB_NAME")
 	return &MongoDbSeatStore{
 		client:      client,
-		collection:  client.Database(DBNAME).Collection(seatCollection),
+		collection:  client.Database(dbName).Collection(seatCollection),
 		flightStore: flightStore,
 	}
 }

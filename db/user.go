@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/fabrizioperria/goflight/types"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -32,9 +33,10 @@ type MongoDbUserStore struct {
 }
 
 func NewMongoDbUserStore(client *mongo.Client) *MongoDbUserStore {
+	dbName := os.Getenv("DB_NAME")
 	return &MongoDbUserStore{
 		client:     client,
-		collection: client.Database(DBNAME).Collection(userCollection),
+		collection: client.Database(dbName).Collection(userCollection),
 	}
 }
 
