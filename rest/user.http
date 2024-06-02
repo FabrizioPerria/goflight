@@ -2,18 +2,19 @@ POST {{BASE_URL}}/auth
 Content-Type: application/json
 
 {
-    "email": "a.b@c.d",
+    "email": "admin@a.b",
     "password": "password"
 }
 
 --{%
 local body = context.json_decode(context.result.body)
 context.set_env("token", body.token)
+context.set_env("user_id", body.user.id)
 --%}
 
 ###
 
-POST {{BASE_URL}}/users
+POST {{URL}}/admin/user
 Content-Type: application/json
 
 {
@@ -26,9 +27,14 @@ Content-Type: application/json
 
 ###
 
-GET {{URL}}/users
+GET {{URL}}/admin/users?limit=4
 Content-Type: application/json
 X-Api-Token: {{token}}
+
+--{%
+local body = context.json_decode(context.result.body)
+context.set_env("reservation_id", body[1].id)
+--%}
 
 ###
 

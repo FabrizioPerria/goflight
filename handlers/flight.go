@@ -4,7 +4,6 @@ import (
 	"github.com/fabrizioperria/goflight/db"
 	"github.com/fabrizioperria/goflight/types"
 	"github.com/gofiber/fiber/v2"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -24,7 +23,7 @@ func (h *FlightHandler) HandleGetFlightv1(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	filter := bson.M{"_id": oid}
+	filter := db.Map{"_id": oid}
 	flight, err := h.store.Flight.GetFlight(ctx.Context(), filter)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
@@ -38,8 +37,12 @@ func (h *FlightHandler) HandleGetSeatsv1(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	filter := bson.M{"flight_id": oid, "available": true}
-	seats, err := h.store.Seat.GetSeats(ctx.Context(), filter)
+	filter := db.Map{"flight_id": oid, "available": true}
+	pagination := db.Pagination{
+		Page:  ctx.Query("page"),
+		Limit: ctx.Query("limit"),
+	}
+	seats, err := h.store.Seat.GetSeats(ctx.Context(), filter, &pagination)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -47,7 +50,11 @@ func (h *FlightHandler) HandleGetSeatsv1(ctx *fiber.Ctx) error {
 }
 
 func (h *FlightHandler) HandleGetFlightsv1(ctx *fiber.Ctx) error {
-	flights, err := h.store.Flight.GetFlights(ctx.Context())
+	pagination := db.Pagination{
+		Page:  ctx.Query("page"),
+		Limit: ctx.Query("limit"),
+	}
+	flights, err := h.store.Flight.GetFlights(ctx.Context(), &pagination)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -87,7 +94,7 @@ func (h *FlightHandler) HandlePostCreateFlightv1(ctx *fiber.Ctx) error {
 		}
 		seatIDs = append(seatIDs, created.Id)
 	}
-	h.store.Flight.UpdateFlight(ctx.Context(), bson.M{"_id": flight.Id}, types.UpdateFlightParams{Seats: seatIDs})
+	h.store.Flight.UpdateFlight(ctx.Context(), db.Map{"_id": flight.Id}, types.UpdateFlightParams{Seats: seatIDs})
 	flight.Seats = seatIDs
 
 	return ctx.Status(fiber.StatusCreated).JSON(flight)
@@ -99,7 +106,7 @@ func (h *FlightHandler) HandlePutFlightv1(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	filter := bson.M{"_id": oid}
+	filter := db.Map{"_id": oid}
 	updateFlightParams := types.UpdateFlightParams{}
 
 	err = ctx.BodyParser(&updateFlightParams)
@@ -133,7 +140,7 @@ func (h *FlightHandler) HandleGetSeatv1(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	filter := bson.M{"_id": sid, "flight_id": fid}
+	filter := db.Map{"_id": sid, "flight_id": fid}
 	seat, err := h.store.Seat.GetSeat(ctx.Context(), filter)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})

@@ -8,7 +8,6 @@ import (
 	"github.com/fabrizioperria/goflight/types"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 type AuthHandler struct {
@@ -36,7 +35,7 @@ func (h *AuthHandler) HandleAuthenticate(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid credentials"})
 	}
 
-	filter := bson.M{"email": authParams.Email}
+	filter := db.Map{"email": authParams.Email}
 	user, err := h.store.User.GetUser(ctx.Context(), filter)
 	if err != nil {
 		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid credentials"})

@@ -9,8 +9,8 @@ import (
 )
 
 type UpdateUserParams struct {
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
+	FirstName string `json:"first_name" bson:"first_name"`
+	LastName  string `json:"last_name" bson:"last_name"`
 }
 
 type CreateUserParams struct {

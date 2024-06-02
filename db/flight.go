@@ -5,16 +5,15 @@ import (
 	"fmt"
 
 	"github.com/fabrizioperria/goflight/types"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type FlightStorer interface {
 	CreateFlight(ctx context.Context, flight *types.Flight) (*types.Flight, error)
-	GetFlight(ctx context.Context, filter bson.M) (*types.Flight, error)
-	GetFlights(ctx context.Context) ([]*types.Flight, error)
-	UpdateFlight(ctx context.Context, filter bson.M, values types.UpdateFlightParams) (string, error)
+	GetFlight(ctx context.Context, filter Map) (*types.Flight, error)
+	GetFlights(ctx context.Context, pagination *Pagination) ([]*types.Flight, error)
+	UpdateFlight(ctx context.Context, filter Map, values types.UpdateFlightParams) (string, error)
 	Dropper
 }
 
@@ -34,7 +33,7 @@ func NewMongoDbFlightStore(client *mongo.Client) *MongoDbFlightStore {
 	}
 }
 
-func (db *MongoDbFlightStore) GetFlight(ctx context.Context, filter bson.M) (*types.Flight, error) {
+func (db *MongoDbFlightStore) GetFlight(ctx context.Context, filter Map) (*types.Flight, error) {
 	var flight types.Flight
 	err := db.collection.FindOne(ctx, filter).Decode(&flight)
 	if err != nil {
@@ -43,9 +42,9 @@ func (db *MongoDbFlightStore) GetFlight(ctx context.Context, filter bson.M) (*ty
 	return &flight, nil
 }
 
-func (db *MongoDbFlightStore) GetFlights(ctx context.Context) ([]*types.Flight, error) {
+func (db *MongoDbFlightStore) GetFlights(ctx context.Context, pagination *Pagination) ([]*types.Flight, error) {
 	var cursor *mongo.Cursor
-	cursor, err := db.collection.Find(ctx, bson.M{})
+	cursor, err := db.collection.Find(ctx, Map{}, pagination.ToFindOptions())
 	if err != nil {
 		return nil, err
 	}
@@ -66,8 +65,8 @@ func (db *MongoDbFlightStore) Drop(ctx context.Context) error {
 	return db.collection.Drop(ctx)
 }
 
-func (db *MongoDbFlightStore) UpdateFlight(ctx context.Context, filter bson.M, values types.UpdateFlightParams) (string, error) {
-	thinValues := bson.M{}
+func (db *MongoDbFlightStore) UpdateFlight(ctx context.Context, filter Map, values types.UpdateFlightParams) (string, error) {
+	thinValues := Map{}
 	if values.ArrivalTime != "" {
 		thinValues["arrival_time"] = values.ArrivalTime
 	}
@@ -77,7 +76,7 @@ func (db *MongoDbFlightStore) UpdateFlight(ctx context.Context, filter bson.M, v
 	if len(values.Seats) > 0 {
 		thinValues["seats"] = values.Seats
 	}
-	update := bson.M{"$set": thinValues}
+	update := Map{"$set": thinValues}
 	result, err := db.collection.UpdateOne(ctx, filter, update)
 	if err != nil || result.ModifiedCount == 0 {
 		return "", fmt.Errorf("flight not found")

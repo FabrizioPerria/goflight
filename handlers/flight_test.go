@@ -13,7 +13,6 @@ import (
 	"github.com/fabrizioperria/goflight/types"
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -82,10 +81,10 @@ func getFlights(flightHandler *FlightHandler, app *fiber.App) (*http.Response, e
 }
 
 func TestPostCreateFlightv1(t *testing.T) {
-	db, err := setupFlightDb()
+	flightDb, err := setupFlightDb()
 	assert.NoError(t, err)
-	defer teardownFlightDb(t, db)
-	flightHandler := FlightHandler{store: db.Store}
+	defer teardownFlightDb(t, flightDb)
+	flightHandler := FlightHandler{store: flightDb.Store}
 
 	app := fiber.New()
 
@@ -108,9 +107,10 @@ func TestPostCreateFlightv1(t *testing.T) {
 
 	// check seats
 	assert.Len(t, bodyT.Seats, 50)
+
 	for i, seatId := range bodyT.Seats {
-		filter := bson.M{"_id": seatId}
-		seat, _ := db.Store.Seat.GetSeat(context.Background(), filter)
+		filter := db.Map{"_id": seatId}
+		seat, _ := flightDb.Store.Seat.GetSeat(context.Background(), filter)
 		assert.Equal(t, bodyT.Id, seat.FlightId)
 		assert.Equal(t, i, seat.Number)
 		assert.True(t, seat.Available)

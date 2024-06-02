@@ -8,7 +8,6 @@ import (
 	"github.com/fabrizioperria/goflight/db"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	// "go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -36,7 +35,7 @@ func JWTAuthentication(userStore db.UserStorer) fiber.Handler {
 			return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 		}
 
-		filter := bson.M{"_id": oid}
+		filter := db.Map{"_id": oid}
 		user, err := userStore.GetUser(ctx.Context(), filter)
 		if err != nil {
 			return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})

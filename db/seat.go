@@ -4,16 +4,15 @@ import (
 	"context"
 
 	"github.com/fabrizioperria/goflight/types"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type SeatStorer interface {
 	CreateSeat(ctx context.Context, user *types.Seat) (*types.Seat, error)
-	UpdateSeat(ctx context.Context, filter bson.M, values types.UpdateSeatParams) (string, error)
-	GetSeats(ctx context.Context, filter bson.M) ([]*types.Seat, error)
-	GetSeat(ctx context.Context, filter bson.M) (*types.Seat, error)
+	UpdateSeat(ctx context.Context, filter Map, values types.UpdateSeatParams) (string, error)
+	GetSeats(ctx context.Context, filter Map, pagination *Pagination) ([]*types.Seat, error)
+	GetSeat(ctx context.Context, filter Map) (*types.Seat, error)
 	Dropper
 }
 
@@ -42,8 +41,8 @@ func (db *MongoDbSeatStore) CreateSeat(ctx context.Context, seat *types.Seat) (*
 	}
 	seat.Id = result.InsertedID.(primitive.ObjectID)
 
-	filter := bson.M{"_id": result.InsertedID}
-	update := bson.M{"$addToSet": bson.M{"seats": seat}}
+	filter := Map{"_id": result.InsertedID}
+	update := Map{"$addToSet": Map{"seats": seat}}
 	_, err = db.flightStore.collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return nil, err
@@ -52,8 +51,8 @@ func (db *MongoDbSeatStore) CreateSeat(ctx context.Context, seat *types.Seat) (*
 	return seat, err
 }
 
-func (db *MongoDbSeatStore) UpdateSeat(ctx context.Context, filter bson.M, values types.UpdateSeatParams) (string, error) {
-	update := bson.M{"$set": values}
+func (db *MongoDbSeatStore) UpdateSeat(ctx context.Context, filter Map, values types.UpdateSeatParams) (string, error) {
+	update := Map{"$set": values}
 	result, err := db.collection.UpdateOne(ctx, filter, update)
 	if err != nil || result.ModifiedCount == 0 {
 		return "", err
@@ -66,9 +65,9 @@ func (db *MongoDbSeatStore) Drop(ctx context.Context) error {
 	return db.collection.Drop(ctx)
 }
 
-func (db *MongoDbSeatStore) GetSeats(ctx context.Context, filter bson.M) ([]*types.Seat, error) {
+func (db *MongoDbSeatStore) GetSeats(ctx context.Context, filter Map, pagination *Pagination) ([]*types.Seat, error) {
 	var cursor *mongo.Cursor
-	cursor, err := db.collection.Find(ctx, filter)
+	cursor, err := db.collection.Find(ctx, filter, pagination.ToFindOptions())
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +78,7 @@ func (db *MongoDbSeatStore) GetSeats(ctx context.Context, filter bson.M) ([]*typ
 	return results, err
 }
 
-func (db *MongoDbSeatStore) GetSeat(ctx context.Context, filter bson.M) (*types.Seat, error) {
+func (db *MongoDbSeatStore) GetSeat(ctx context.Context, filter Map) (*types.Seat, error) {
 	var seat types.Seat
 	err := db.collection.FindOne(ctx, filter).Decode(&seat)
 	if err != nil {

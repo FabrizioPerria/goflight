@@ -222,7 +222,6 @@ func TestGetUserByIdNotFound(t *testing.T) {
 	db, err := setupUsersDb()
 	assert.NoError(t, err)
 	defer teardownUsersDb(t, db)
-	store := UserHandler{store: db.Store}
 
 	app := SetupRoutes(db.Store, fiber.Config{})
 	_, token := fixtures.AuthenticateUser(&db.Store)
@@ -230,7 +229,6 @@ func TestGetUserByIdNotFound(t *testing.T) {
 	req := httptest.NewRequest("GET", "/api/v1/users/16624e25e22069075acbb235", nil)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("X-Api-Token", token)
-	app.Get("/api/v1/users/:uid", store.HandleGetUserv1)
 	response, err := app.Test(req)
 	assert.NoError(t, err)
 	assert.Equal(t, 404, response.StatusCode)
@@ -269,7 +267,6 @@ func TestDeleteUserByIdNotFound(t *testing.T) {
 	db, err := setupUsersDb()
 	assert.NoError(t, err)
 	defer teardownUsersDb(t, db)
-	userHandler := UserHandler{store: db.Store}
 
 	app := SetupRoutes(db.Store, fiber.Config{})
 	_, token := fixtures.AuthenticateUser(&db.Store)
@@ -277,7 +274,6 @@ func TestDeleteUserByIdNotFound(t *testing.T) {
 	req := httptest.NewRequest("DELETE", "/api/v1/users/16624e25e22069075acbb235", nil)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("X-Api-Token", token)
-	app.Delete("/api/v1/users/:uid", userHandler.HandleDeleteUserv1)
 	response, err := app.Test(req)
 	assert.NoError(t, err)
 	assert.Equal(t, 404, response.StatusCode)
@@ -328,7 +324,6 @@ func TestPutUser(t *testing.T) {
 	db, err := setupUsersDb()
 	assert.NoError(t, err)
 	defer teardownUsersDb(t, db)
-	userHandler := UserHandler{store: db.Store}
 
 	app := SetupRoutes(db.Store, fiber.Config{})
 
@@ -346,7 +341,6 @@ func TestPutUser(t *testing.T) {
 	req := httptest.NewRequest("PUT", "/api/v1/users/"+id, bytes.NewReader(marshalUser))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("X-Api-Token", token)
-	app.Put("/api/v1/users/:uid", userHandler.HandlePutUserv1)
 	response, err := app.Test(req)
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusOK, response.StatusCode)
@@ -354,7 +348,6 @@ func TestPutUser(t *testing.T) {
 	req = httptest.NewRequest("GET", "/api/v1/users/"+id, nil)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("X-Api-Token", token)
-	app.Get("/api/v1/users/:uid", userHandler.HandleGetUserv1)
 	response, err = app.Test(req)
 	assert.NoError(t, err)
 	assert.Equal(t, fiber.StatusOK, response.StatusCode)
@@ -366,8 +359,8 @@ func TestPutUser(t *testing.T) {
 	err = json.Unmarshal(body, &bodyT)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, bodyT.Id)
-	assert.Equal(t, user.FirstName, bodyT.FirstName)
-	assert.Equal(t, user.LastName, bodyT.LastName)
+	assert.Equal(t, updateUser.FirstName, bodyT.FirstName)
+	assert.Equal(t, updateUser.LastName, bodyT.LastName)
 	assert.Equal(t, user.Email, bodyT.Email)
 	assert.Equal(t, user.Phone, bodyT.Phone)
 	assert.Equal(t, len(bodyT.EncryptedPassword), 0)
@@ -377,7 +370,6 @@ func TestPutUserNotFound(t *testing.T) {
 	db, err := setupUsersDb()
 	assert.NoError(t, err)
 	defer teardownUsersDb(t, db)
-	userHandler := UserHandler{store: db.Store}
 
 	app := SetupRoutes(db.Store, fiber.Config{})
 	_, token := fixtures.AuthenticateUser(&db.Store)
@@ -393,7 +385,6 @@ func TestPutUserNotFound(t *testing.T) {
 	req := httptest.NewRequest("PUT", "/api/v1/users/16624e25e22069075acbb235", bytes.NewReader(marshalUser))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("X-Api-Token", token)
-	app.Put("/api/v1/users/:uid", userHandler.HandlePutUserv1)
 	response, err := app.Test(req)
 	assert.NoError(t, err)
 	assert.Equal(t, 404, response.StatusCode)

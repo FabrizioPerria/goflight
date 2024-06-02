@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/fabrizioperria/goflight/types"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -16,10 +15,10 @@ type Dropper interface {
 
 type UserStorer interface {
 	CreateUser(ctx context.Context, user *types.User) (*types.User, error)
-	GetUser(ctx context.Context, filter bson.M) (*types.User, error)
-	GetUsers(ctx context.Context) ([]*types.User, error)
-	DeleteUser(ctx context.Context, filter bson.M) (string, error)
-	UpdateUser(ctx context.Context, filter bson.M, values types.UpdateUserParams) (string, error)
+	GetUser(ctx context.Context, filter Map) (*types.User, error)
+	GetUsers(ctx context.Context, pagination *Pagination) ([]*types.User, error)
+	DeleteUser(ctx context.Context, filter Map) (string, error)
+	UpdateUser(ctx context.Context, filter Map, values types.UpdateUserParams) (string, error)
 	Dropper
 }
 
@@ -39,7 +38,7 @@ func NewMongoDbUserStore(client *mongo.Client) *MongoDbUserStore {
 	}
 }
 
-func (db *MongoDbUserStore) GetUser(ctx context.Context, filter bson.M) (*types.User, error) {
+func (db *MongoDbUserStore) GetUser(ctx context.Context, filter Map) (*types.User, error) {
 	user := &types.User{}
 	if err := db.collection.FindOne(ctx, filter).Decode(&user); err != nil {
 		return nil, err
@@ -48,9 +47,9 @@ func (db *MongoDbUserStore) GetUser(ctx context.Context, filter bson.M) (*types.
 	return user, nil
 }
 
-func (db *MongoDbUserStore) GetUsers(ctx context.Context) ([]*types.User, error) {
+func (db *MongoDbUserStore) GetUsers(ctx context.Context, pagination *Pagination) ([]*types.User, error) {
 	var cursor *mongo.Cursor
-	cursor, err := db.collection.Find(ctx, bson.M{})
+	cursor, err := db.collection.Find(ctx, Map{}, pagination.ToFindOptions())
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +69,7 @@ func (db *MongoDbUserStore) CreateUser(ctx context.Context, user *types.User) (*
 	return user, err
 }
 
-func (db *MongoDbUserStore) DeleteUser(ctx context.Context, filter bson.M) (string, error) {
+func (db *MongoDbUserStore) DeleteUser(ctx context.Context, filter Map) (string, error) {
 	res, err := db.collection.DeleteOne(ctx, filter)
 	if err != nil || res.DeletedCount == 0 {
 		return "", fmt.Errorf("user not found")
@@ -84,8 +83,8 @@ func (db *MongoDbUserStore) Drop(ctx context.Context) error {
 	return err
 }
 
-func (db *MongoDbUserStore) UpdateUser(ctx context.Context, filter bson.M, values types.UpdateUserParams) (string, error) {
-	result, err := db.collection.UpdateOne(ctx, filter, bson.M{"$set": values})
+func (db *MongoDbUserStore) UpdateUser(ctx context.Context, filter Map, values types.UpdateUserParams) (string, error) {
+	result, err := db.collection.UpdateOne(ctx, filter, Map{"$set": values})
 	if err != nil || result.ModifiedCount == 0 {
 		return "", fmt.Errorf("user not found")
 	}

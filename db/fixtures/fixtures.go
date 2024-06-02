@@ -3,12 +3,10 @@ package fixtures
 import (
 	"context"
 
-	"github.com/brianvoe/gofakeit/v7"
 	"github.com/fabrizioperria/goflight/handlers/middleware"
 	"github.com/fabrizioperria/goflight/types"
 
 	"github.com/govalues/money"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/fabrizioperria/goflight/db"
@@ -34,11 +32,11 @@ func AuthenticateUser(store *db.Store) (*types.User, string) {
 
 func AddUser(store *db.Store, email, password, phone, firstName, lastName string, isAdmin bool) (*types.User, error) {
 	userParams := types.CreateUserParams{
-		Email:         gofakeit.Email(),
-		PlainPassword: gofakeit.Password(true, true, true, true, false, 10),
-		Phone:         gofakeit.Phone(),
-		FirstName:     gofakeit.FirstName(),
-		LastName:      gofakeit.LastName(),
+		Email:         email,
+		PlainPassword: password,
+		Phone:         phone,
+		FirstName:     firstName,
+		LastName:      lastName,
 	}
 	user, err := types.NewUserFromParams(userParams, isAdmin)
 	if err != nil {
@@ -79,7 +77,7 @@ func AddSeat(store *db.Store, price money.Amount, number int, class types.SeatCl
 }
 
 func AddSeatsToFlight(store *db.Store, flightId primitive.ObjectID, seats []primitive.ObjectID) error {
-	filter := bson.M{"_id": flightId}
+	filter := db.Map{"_id": flightId}
 	flight, err := store.Flight.GetFlight(context.Background(), filter)
 	if err != nil {
 		return err
@@ -95,5 +93,5 @@ func AddSeatsToFlight(store *db.Store, flightId primitive.ObjectID, seats []prim
 }
 
 func AddReservation(store *db.Store, seatId primitive.ObjectID, userId primitive.ObjectID) (*types.Reservation, error) {
-	return store.Reservation.CreateReservation(context.Background(), bson.M{"_id": seatId}, userId)
+	return store.Reservation.CreateReservation(context.Background(), db.Map{"_id": seatId}, userId)
 }

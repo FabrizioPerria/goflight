@@ -6,7 +6,6 @@ import (
 	"github.com/fabrizioperria/goflight/db"
 	"github.com/fabrizioperria/goflight/types"
 	"github.com/gofiber/fiber/v2"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -26,7 +25,7 @@ func (h *UserHandler) HandleGetUserv1(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	filter := bson.M{"_id": oid}
+	filter := db.Map{"_id": oid}
 
 	user, err := h.store.User.GetUser(ctx.Context(), filter)
 	if err != nil {
@@ -36,7 +35,11 @@ func (h *UserHandler) HandleGetUserv1(ctx *fiber.Ctx) error {
 }
 
 func (h *UserHandler) HandleGetUsersv1(ctx *fiber.Ctx) error {
-	users, err := h.store.User.GetUsers(ctx.Context())
+	pagination := db.Pagination{
+		Page:  ctx.Query("page"),
+		Limit: ctx.Query("limit"),
+	}
+	users, err := h.store.User.GetUsers(ctx.Context(), &pagination)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -98,7 +101,7 @@ func (h *UserHandler) HandleDeleteUserv1(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	filter := bson.M{"_id": oid}
+	filter := db.Map{"_id": oid}
 
 	id, err := h.store.User.DeleteUser(ctx.Context(), filter)
 	if err != nil {
@@ -121,7 +124,7 @@ func (h *UserHandler) HandlePutUserv1(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	filter := bson.M{"_id": oid}
+	filter := db.Map{"_id": oid}
 
 	values := types.UpdateUserParams{}
 	err = ctx.BodyParser(&values)
