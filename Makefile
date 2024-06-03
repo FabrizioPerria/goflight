@@ -11,7 +11,7 @@ key:
 	openssl rand -base64 756 > ./rs_keyfile
 	chmod 0400 ./rs_keyfile
 
-mongo: clean-container key
+run: clean-container key
 	@docker compose up -d --wait 
 
 new-db:
@@ -19,10 +19,6 @@ new-db:
 
 build:
 	@go build -o bin/api .
-	@docker build -t api .
-
-run: build clean mongo
-	@./bin/api
 
 test:
 	@go test -v ./... --count=1
@@ -35,5 +31,5 @@ clean-container:
 
 clean: clean-server clean-container
 
-air: mongo
-	@air
+# air: mongo
+# 	@air
