@@ -19,6 +19,7 @@ new-db:
 
 build:
 	@go build -o bin/api .
+	@docker build -t api .
 
 run: build clean mongo
 	@./bin/api

@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/fabrizioperria/goflight/types"
 	"go.mongodb.org/mongo-driver/bson/primitive"

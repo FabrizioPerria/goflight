@@ -11,10 +11,10 @@ services:
       start_period: 0s
       start_interval: 1s
       retries: 30
-#     volumes:
-#       - "mongo1_data:/data/db"
-#       - "mongo1_config:/data/configdb"
-#
-# volumes:
-#   mongo1_data:
-#   mongo1_config:
+  api:
+    build: .
+    ports:
+      - 5001:5001
+    env_file:
+    - path: ./.env
+      required: true

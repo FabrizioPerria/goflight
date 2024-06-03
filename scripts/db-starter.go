@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
@@ -11,6 +12,7 @@ import (
 	"github.com/fabrizioperria/goflight/db/fixtures"
 	"github.com/fabrizioperria/goflight/types"
 	"github.com/govalues/money"
+	_ "github.com/joho/godotenv/autoload"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -26,7 +28,10 @@ func SeedUsers(client *mongo.Client, store *db.Store) {
 	store.User.Drop(context.Background())
 
 	fmt.Println("Seeding users")
-	user, _ := fixtures.AddUser(store, "admin@a.b", "password", "1234567890", "Dude", "Dudely", true)
+	user, err := fixtures.AddUser(store, "admin@a.b", "password", "1234567890", "Dude", "Dudely", true)
+	if err != nil {
+		fmt.Println(err)
+	}
 	users = append(users, *user)
 	user, _ = fixtures.AddUser(store, "nonadmin@a.b", "password", "1234567890", "Dude", "Dudely", false)
 	users = append(users, *user)
@@ -103,12 +108,9 @@ func SeedReservations(client *mongo.Client, store *db.Store) {
 	}
 }
 
-const (
-	uri = "mongodb://mongo1:27017"
-)
-
 func main() {
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri).SetReplicaSet("rs0"))
+	mongoUrl := os.Getenv("MONGO_URL")
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoUrl).SetReplicaSet("rs0"))
 	if err != nil {
 		log.Fatal(err)
 	}

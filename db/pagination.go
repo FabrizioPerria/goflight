@@ -11,15 +11,25 @@ type Pagination struct {
 	Limit string `json:"limit"`
 }
 
-func (pagination *Pagination) ToFindOptions() *options.FindOptions {
+func (pagination *Pagination) GetPage() int64 {
 	pageNumber, err := strconv.ParseInt(pagination.Page, 10, 64)
 	if err != nil {
-		pageNumber = 1
+		return 1
 	}
+	return pageNumber
+}
+
+func (pagination *Pagination) GetLimit() int64 {
 	limitNumber, err := strconv.ParseInt(pagination.Limit, 10, 64)
 	if err != nil {
-		limitNumber = 10
+		return 10
 	}
+	return limitNumber
+}
+
+func (pagination *Pagination) ToFindOptions() *options.FindOptions {
+	pageNumber := pagination.GetPage()
+	limitNumber := pagination.GetLimit()
 	opts := options.Find()
 	opts.SetLimit(limitNumber)
 	opts.SetSkip((pageNumber - 1) * limitNumber)
